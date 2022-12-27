@@ -4,6 +4,31 @@
   <groupId>io.github.rgamba</groupId>
   <artifactId>skipper-core</artifactId>
   <version>1.1.1</version>
+
+  <name>skipper</name>
+  <url>http://github.com/rgamba/skipper</url>
+  <description>skipper is a lightweight library for stateful workflow management</description>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Ricardo Gamba</name>
+      <email>rgamba@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:rgamba/skipper.git</connection>
+    <developerConnection>scm:git:ssh://github.com:rgamba/skipper.git</developerConnection>
+    <url>https://github.com/rgamba/skipper/tree/master</url>
+  </scm>
+
   <build>
     <plugins>
       <plugin>
@@ -108,8 +133,6 @@
       </plugin>
     </plugins>
   </build>
-  <name>skipper</name>
-  <url>http://maven.apache.org</url>
 
   <dependencies>
     <dependency>
