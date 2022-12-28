@@ -4,9 +4,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import demo.operations.Operations;
 import demo.services.Ledger;
-import skipper.OperationProxyFactory;
-import skipper.api.annotations.WorkflowOperation;
-import skipper.module.SkipperModule;
+import io.github.rgamba.skipper.OperationProxyFactory;
+import io.github.rgamba.skipper.api.annotations.WorkflowOperation;
+import io.github.rgamba.skipper.module.SkipperModule;
 
 public class DemoModule extends AbstractModule {
   @Override

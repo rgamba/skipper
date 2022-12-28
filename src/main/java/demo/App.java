@@ -1,7 +1,5 @@
 package demo;
 
-import static skipper.Metrics.registry;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import demo.operations.Operations;
@@ -14,13 +12,13 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import io.github.rgamba.skipper.DependencyRegistry;
+import io.github.rgamba.skipper.admin.AdminResource;
+import io.github.rgamba.skipper.client.SkipperClient;
+import io.github.rgamba.skipper.module.SkipperEngineFactory;
+import io.github.rgamba.skipper.module.TimerProcessorFactory;
+import io.github.rgamba.skipper.store.mysql.MySqlMigrationsManager;
 import lombok.val;
-import skipper.DependencyRegistry;
-import skipper.admin.AdminResource;
-import skipper.client.SkipperClient;
-import skipper.module.SkipperEngineFactory;
-import skipper.module.TimerProcessorFactory;
-import skipper.store.mysql.MySqlMigrationsManager;
 
 public class App extends Application<AppConfig> {
   public static void main(String[] args) throws Exception {

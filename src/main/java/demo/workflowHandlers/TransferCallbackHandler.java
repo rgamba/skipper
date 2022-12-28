@@ -1,10 +1,10 @@
 package demo.workflowHandlers;
 
 import demo.workflows.TransferWorkflow;
+import io.github.rgamba.skipper.SkipperEngine;
+import io.github.rgamba.skipper.api.CallbackHandler;
+import io.github.rgamba.skipper.models.WorkflowInstance;
 import lombok.NonNull;
-import skipper.SkipperEngine;
-import skipper.api.CallbackHandler;
-import skipper.models.WorkflowInstance;
 
 public class TransferCallbackHandler implements CallbackHandler {
 

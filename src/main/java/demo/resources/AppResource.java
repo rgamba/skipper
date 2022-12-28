@@ -3,14 +3,14 @@ package demo.resources;
 import demo.services.Ledger;
 import demo.workflowHandlers.TransferCallbackHandler;
 import demo.workflows.TransferWorkflow;
+import io.github.rgamba.skipper.client.SkipperClient;
+import io.github.rgamba.skipper.models.WorkflowInstance;
 import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import lombok.NonNull;
 import lombok.val;
-import skipper.client.SkipperClient;
-import skipper.models.WorkflowInstance;
 
 @Path("/transfers")
 @Produces(MediaType.APPLICATION_JSON)

@@ -1,6 +1,6 @@
 package demo;
 
-import static skipper.Metrics.registry;
+import static io.github.rgamba.skipper.Metrics.registry;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
@@ -12,6 +12,17 @@ import com.google.inject.Injector;
 import demo.operations.Operations;
 import demo.workflows.ApprovalWorkflow;
 import demo.workflows.TransferWorkflow;
+import io.github.rgamba.skipper.DependencyRegistry;
+import io.github.rgamba.skipper.Metrics;
+import io.github.rgamba.skipper.SkipperEngine;
+import io.github.rgamba.skipper.api.CallbackHandler;
+import io.github.rgamba.skipper.api.WorkflowCreationRequest;
+import io.github.rgamba.skipper.common.Anything;
+import io.github.rgamba.skipper.models.WorkflowInstance;
+import io.github.rgamba.skipper.models.WorkflowType;
+import io.github.rgamba.skipper.module.SkipperEngineFactory;
+import io.github.rgamba.skipper.module.TimerProcessorFactory;
+import io.github.rgamba.skipper.store.mysql.MySqlMigrationsManager;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
@@ -25,17 +36,6 @@ import javax.management.ObjectName;
 import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import skipper.DependencyRegistry;
-import skipper.Metrics;
-import skipper.SkipperEngine;
-import skipper.api.CallbackHandler;
-import skipper.api.WorkflowCreationRequest;
-import skipper.common.Anything;
-import skipper.models.WorkflowInstance;
-import skipper.models.WorkflowType;
-import skipper.module.SkipperEngineFactory;
-import skipper.module.TimerProcessorFactory;
-import skipper.store.mysql.MySqlMigrationsManager;
 
 public class TestRunner {
   private static final Map<String, Lapse> workflows = new ConcurrentHashMap<>();

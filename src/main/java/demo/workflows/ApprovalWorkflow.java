@@ -1,16 +1,16 @@
 package demo.workflows;
 
 import demo.operations.Operations;
+import io.github.rgamba.skipper.OperationProxyFactory;
+import io.github.rgamba.skipper.api.OperationConfig;
+import io.github.rgamba.skipper.api.SkipperWorkflow;
+import io.github.rgamba.skipper.api.WaitTimeout;
+import io.github.rgamba.skipper.api.annotations.SignalConsumer;
+import io.github.rgamba.skipper.api.annotations.StateField;
+import io.github.rgamba.skipper.api.annotations.WorkflowMethod;
+import io.github.rgamba.skipper.models.FixedRetryStrategy;
 import java.time.Duration;
 import lombok.NonNull;
-import skipper.OperationProxyFactory;
-import skipper.api.OperationConfig;
-import skipper.api.SkipperWorkflow;
-import skipper.api.WaitTimeout;
-import skipper.api.annotations.SignalConsumer;
-import skipper.api.annotations.StateField;
-import skipper.api.annotations.WorkflowMethod;
-import skipper.models.FixedRetryStrategy;
 
 public class ApprovalWorkflow implements SkipperWorkflow {
   private final Operations operations =

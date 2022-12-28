@@ -6,11 +6,11 @@ import static org.mockito.Mockito.*;
 
 import demo.operations.Operations;
 import demo.workflows.TransferWorkflow;
+import io.github.rgamba.skipper.api.OperationError;
+import io.github.rgamba.skipper.testUtils.WorkflowTest;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
-import skipper.api.OperationError;
-import skipper.testUtils.WorkflowTest;
 
 public class TransferWorkflowTest extends WorkflowTest {
   private TransferWorkflow transferWorkflow;
