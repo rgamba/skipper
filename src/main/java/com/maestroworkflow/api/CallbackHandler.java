@@ -5,5 +5,5 @@ import com.maestroworkflow.models.WorkflowInstance;
 import lombok.NonNull;
 
 public interface CallbackHandler {
-    void handleUpdate(@NonNull WorkflowInstance workflowInstance, @NonNull MaestroEngine engine);
+  void handleUpdate(@NonNull WorkflowInstance workflowInstance, @NonNull MaestroEngine engine);
 }

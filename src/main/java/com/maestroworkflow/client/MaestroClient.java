@@ -6,7 +6,7 @@ import com.maestroworkflow.models.WorkflowInstance;
 import lombok.NonNull;
 
 public interface MaestroClient {
-    WorkflowCreationResponse createWorkflowInstance(@NonNull WorkflowCreationRequest request);
+  WorkflowCreationResponse createWorkflowInstance(@NonNull WorkflowCreationRequest request);
 
-    WorkflowInstance getWorkflowInstance(@NonNull String workflowInstanceId);
+  WorkflowInstance getWorkflowInstance(@NonNull String workflowInstanceId);
 }

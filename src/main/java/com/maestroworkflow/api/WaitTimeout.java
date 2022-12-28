@@ -1,4 +1,3 @@
 package com.maestroworkflow.api;
 
-public class WaitTimeout extends RuntimeException {
-}
+public class WaitTimeout extends RuntimeException {}

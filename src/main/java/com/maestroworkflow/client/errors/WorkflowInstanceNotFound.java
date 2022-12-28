@@ -1,4 +1,3 @@
 package com.maestroworkflow.client.errors;
 
-public class WorkflowInstanceNotFound extends RuntimeException {
-}
+public class WorkflowInstanceNotFound extends RuntimeException {}

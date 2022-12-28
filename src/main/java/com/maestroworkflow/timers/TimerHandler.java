@@ -4,5 +4,5 @@ import com.maestroworkflow.MaestroEngine;
 import lombok.NonNull;
 
 public interface TimerHandler {
-    void process(Object payload, @NonNull MaestroEngine engine);
+  void process(Object payload, @NonNull MaestroEngine engine);
 }

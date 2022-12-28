@@ -8,5 +8,5 @@ import lombok.Value;
 @Value
 @Builder(toBuilder = true)
 public class WorkflowCreationResponse {
-    @NonNull WorkflowInstance workflowInstance;
+  @NonNull WorkflowInstance workflowInstance;
 }

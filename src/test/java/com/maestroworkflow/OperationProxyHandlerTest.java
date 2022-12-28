@@ -1,5 +1,8 @@
 package com.maestroworkflow;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import com.maestroworkflow.api.OperationConfig;
 import com.maestroworkflow.api.StopWorkflowExecution;
 import com.maestroworkflow.api.WorkflowContext;
@@ -7,32 +10,32 @@ import com.maestroworkflow.models.Anything;
 import com.maestroworkflow.models.FixedRetryStrategy;
 import com.maestroworkflow.models.OperationResponse;
 import com.maestroworkflow.models.OperationType;
-import lombok.val;
-import org.junit.Test;
-
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import lombok.val;
+import org.junit.Test;
 
 public class OperationProxyHandlerTest {
 
-    private static class Foo {
-        Integer bar(String a, Integer b) {
-            return 1;
-        }
+  private static class Foo {
+    Integer bar(String a, Integer b) {
+      return 1;
     }
+  }
 
-    @Test
-    public void testInvokeWhenResponseIsNotPresent_StopExecutionIsThrown() throws Throwable {
-        Foo proxy = new Foo();
-        Method method = proxy.getClass().getDeclaredMethods()[0];
-        val responses = new ArrayList<OperationResponse>(){{
-            // Add a response from the same operation but different method. Should be ignored
-            add(OperationResponse.builder()
+  @Test
+  public void testInvokeWhenResponseIsNotPresent_StopExecutionIsThrown() throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses =
+        new ArrayList<OperationResponse>() {
+          {
+            // Add a response from the same operation but different method. Should be
+            // ignored
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar1"))
                     .creationTime(Instant.now())
                     .id("resp001")
@@ -42,8 +45,10 @@ public class OperationProxyHandlerTest {
                     .workflowInstanceId("wf123")
                     .iteration(0)
                     .build());
-            // Add a response from the same operation AND method but different iteration. Should be ignored
-            add(OperationResponse.builder()
+            // Add a response from the same operation AND method but different
+            // iteration. Should be ignored
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar"))
                     .creationTime(Instant.now())
                     .id("resp002")
@@ -53,9 +58,11 @@ public class OperationProxyHandlerTest {
                     .workflowInstanceId("wf123")
                     .iteration(3)
                     .build());
-            // Add a response from the same operation AND method AND iteration but the result
+            // Add a response from the same operation AND method AND iteration but the
+            // result
             // is a transient error so SHOULD be ignored.
-            add(OperationResponse.builder()
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar"))
                     .creationTime(Instant.now())
                     .id("resp002")
@@ -66,48 +73,70 @@ public class OperationProxyHandlerTest {
                     .iteration(0)
                     .error(new Anything(new IllegalArgumentException("error")))
                     .build());
-        }};
+          }
+        };
 
-        val handler = new OperationProxyHandler(responses, new WorkflowContext("", Instant.now(), responses, Instant.MIN), Foo.class, null, false);
-        try {
-            handler.invoke(proxy, method, null, new Object[]{"a", 1});
-            throw new Exception("Expected invoke to throw StopWorkflowExecution");
-        } catch (StopWorkflowExecution e) {
-            assertEquals(1, e.getOperationRequests().size());
-            val req = e.getOperationRequests().get(0);
-            assertEquals(Foo.class, req.getOperationType().getClazz());
-            assertEquals("bar", req.getOperationType().getMethod());
-            assertEquals(0, req.getIteration());
-            assertEquals(2, req.getArguments().size());
-            assertEquals(new Anything(String.class, "a"), req.getArguments().get(0));
-            assertEquals(new Anything(Integer.class, 1), req.getArguments().get(1));
-            assertEquals(OperationExecutor.DEFAULT_RETRY_STRATEGY, req.getRetryStrategy());
-        }
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            null,
+            false);
+    try {
+      handler.invoke(proxy, method, null, new Object[] {"a", 1});
+      throw new Exception("Expected invoke to throw StopWorkflowExecution");
+    } catch (StopWorkflowExecution e) {
+      assertEquals(1, e.getOperationRequests().size());
+      val req = e.getOperationRequests().get(0);
+      assertEquals(Foo.class, req.getOperationType().getClazz());
+      assertEquals("bar", req.getOperationType().getMethod());
+      assertEquals(0, req.getIteration());
+      assertEquals(2, req.getArguments().size());
+      assertEquals(new Anything(String.class, "a"), req.getArguments().get(0));
+      assertEquals(new Anything(Integer.class, 1), req.getArguments().get(1));
+      assertEquals(OperationExecutor.DEFAULT_RETRY_STRATEGY, req.getRetryStrategy());
     }
+  }
 
-    @Test
-    public void testInvokeWhenResponseIsNotPresentAndCustomRetryStrategy_StopExecutionIsThrown() throws Throwable {
-        Foo proxy = new Foo();
-        Method method = proxy.getClass().getDeclaredMethods()[0];
-        val responses = new ArrayList<OperationResponse>();
-        val config = OperationConfig.builder().retryStrategy(FixedRetryStrategy.builder().maxRetries(10).retryDelay(Duration.ZERO).build()).build();
-        val handler = new OperationProxyHandler(responses, new WorkflowContext("", Instant.now(), responses, Instant.MIN), Foo.class, config, false);
-        try {
-            handler.invoke(proxy, method, null, new Object[]{"a", 1});
-            throw new Exception("Expected invoke to throw StopWorkflowExecution");
-        } catch (StopWorkflowExecution e) {
-            val req = e.getOperationRequests().get(0);
-            assertEquals(config.getRetryStrategy(), req.getRetryStrategy());
-        }
+  @Test
+  public void testInvokeWhenResponseIsNotPresentAndCustomRetryStrategy_StopExecutionIsThrown()
+      throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses = new ArrayList<OperationResponse>();
+    val config =
+        OperationConfig.builder()
+            .retryStrategy(
+                FixedRetryStrategy.builder().maxRetries(10).retryDelay(Duration.ZERO).build())
+            .build();
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            config,
+            false);
+    try {
+      handler.invoke(proxy, method, null, new Object[] {"a", 1});
+      throw new Exception("Expected invoke to throw StopWorkflowExecution");
+    } catch (StopWorkflowExecution e) {
+      val req = e.getOperationRequests().get(0);
+      assertEquals(config.getRetryStrategy(), req.getRetryStrategy());
     }
+  }
 
-    @Test
-    public void testInvokeWhenResponseIsPresentAndNotError_ValueIsReturned() throws Throwable {
-        Foo proxy = new Foo();
-        Method method = proxy.getClass().getDeclaredMethods()[0];
-        val responses = new ArrayList<OperationResponse>(){{
-            // Add a response from the same operation AND method but different iteration. Should be ignored
-            add(OperationResponse.builder()
+  @Test
+  public void testInvokeWhenResponseIsPresentAndNotError_ValueIsReturned() throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses =
+        new ArrayList<OperationResponse>() {
+          {
+            // Add a response from the same operation AND method but different
+            // iteration. Should be ignored
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar"))
                     .creationTime(Instant.now())
                     .id("resp002")
@@ -118,20 +147,32 @@ public class OperationProxyHandlerTest {
                     .iteration(0)
                     .result(new Anything(Integer.class, 123))
                     .build());
-        }};
-        val handler = new OperationProxyHandler(responses, new WorkflowContext("", Instant.now(), responses, Instant.MIN), Foo.class, null, false);
-        Object result = handler.invoke(proxy, method, null, new Object[]{"a", 1});
-        assertEquals(123, result);
-        assertEquals(Integer.class, result.getClass());
-    }
+          }
+        };
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            null,
+            false);
+    Object result = handler.invoke(proxy, method, null, new Object[] {"a", 1});
+    assertEquals(123, result);
+    assertEquals(Integer.class, result.getClass());
+  }
 
-    @Test
-    public void testInvokeWhenResponseIsPresentAndResultIsNull_NullValueIsReturned() throws Throwable {
-        Foo proxy = new Foo();
-        Method method = proxy.getClass().getDeclaredMethods()[0];
-        val responses = new ArrayList<OperationResponse>(){{
-            // Add a response from the same operation AND method but different iteration. Should be ignored
-            add(OperationResponse.builder()
+  @Test
+  public void testInvokeWhenResponseIsPresentAndResultIsNull_NullValueIsReturned()
+      throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses =
+        new ArrayList<OperationResponse>() {
+          {
+            // Add a response from the same operation AND method but different
+            // iteration. Should be ignored
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar"))
                     .creationTime(Instant.now())
                     .id("resp002")
@@ -142,20 +183,31 @@ public class OperationProxyHandlerTest {
                     .iteration(0)
                     .result(null)
                     .build());
-        }};
+          }
+        };
 
-        val handler = new OperationProxyHandler(responses, new WorkflowContext("", Instant.now(), responses, Instant.MIN), Foo.class, null, false);
-        Object result = handler.invoke(proxy, method, null, new Object[]{"a", 1});
-        assertNull(result);
-    }
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            null,
+            false);
+    Object result = handler.invoke(proxy, method, null, new Object[] {"a", 1});
+    assertNull(result);
+  }
 
-    @Test
-    public void testInvokeWhenResponseIsPresentAndIsError_ExceptionIsRaised() throws Throwable {
-        Foo proxy = new Foo();
-        Method method = proxy.getClass().getDeclaredMethods()[0];
-        val responses = new ArrayList<OperationResponse>(){{
-            // Add a response from the same operation AND method but different iteration. Should be ignored
-            add(OperationResponse.builder()
+  @Test
+  public void testInvokeWhenResponseIsPresentAndIsError_ExceptionIsRaised() throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses =
+        new ArrayList<OperationResponse>() {
+          {
+            // Add a response from the same operation AND method but different
+            // iteration. Should be ignored
+            add(
+                OperationResponse.builder()
                     .operationType(new OperationType(Foo.class, "bar"))
                     .creationTime(Instant.now())
                     .id("resp002")
@@ -164,16 +216,25 @@ public class OperationProxyHandlerTest {
                     .operationRequestId("req002")
                     .workflowInstanceId("wf123")
                     .iteration(0)
-                    .error(new Anything(IllegalArgumentException.class, new IllegalArgumentException("error!")))
+                    .error(
+                        new Anything(
+                            IllegalArgumentException.class, new IllegalArgumentException("error!")))
                     .build());
-        }};
+          }
+        };
 
-        val handler = new OperationProxyHandler(responses, new WorkflowContext("", Instant.now(), responses, Instant.MIN), Foo.class, null, false);
-        try {
-            handler.invoke(proxy, method, null, new Object[]{"a", 1});
-            throw new Exception("Expected an IllegalArgumentException to be raised");
-        } catch (IllegalArgumentException e) {
-            assertEquals("error!", e.getMessage());
-        }
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            null,
+            false);
+    try {
+      handler.invoke(proxy, method, null, new Object[] {"a", 1});
+      throw new Exception("Expected an IllegalArgumentException to be raised");
+    } catch (IllegalArgumentException e) {
+      assertEquals("error!", e.getMessage());
     }
+  }
 }

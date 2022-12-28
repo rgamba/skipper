@@ -353,64 +353,47 @@ Workflow detail view
                     <th scope="col">Operation input</th>
                     <th scope="col">Result</th>
                     <th scope="col">Execution date</th>
-                    <th scope="col"></th>
+<#--                    <th scope="col"></th>-->
                 </tr>
                 </thead>
                 <tbody>
                 {{#each history}}
                 <tr>
                     <td>
-                        {{#if success}}
+                        {{#if response}}
+                        {{#if response.success}}
                         <span class="badge badge-success mr-1" style="min-width: 50px">Success</span>
                         {{else}}
-                        <span class="badge badge-{{#if transient}}warning{{else}}danger{{/if}} mr-1" style="min-width: 50px">Error</span>
+                        <span class="badge badge-{{#if response.transient}}warning{{else}}danger{{/if}} mr-1" style="min-width: 50px">Error</span>
                         {{/if}}
-                        <code style="color: white">{{operationType.clazz}}:{{operationType.method}}</code><small class="text-muted mx-1">({{iteration}})</small>
-                    </td>
-                    <td>
-                        {{#if childWorkflowInstanceId}}
-                        <a href="#" onclick="view_workflow('{{childWorkflowInstanceId}}');">View workflow</a>
                         {{else}}
-                        <a href="#" onclick="show_data('Operation input', '{{operation_input}}');return false">View input</a>
+                        <span class="badge badge-light mr-1" style="min-width: 50px">Pending</span>
+                        {{/if}}
+                        <code style="color: white">{{request.operationType.clazz}}:{{request.operationType.method}}</code><small class="text-muted mx-1">({{request.iteration}})</small>
+                    </td>
+                    <td>
+                        {{#if response.childWorkflowInstanceId}}
+                        <a href="#" onclick="view_workflow('{{response.childWorkflowInstanceId}}');">View workflow</a>
+                        {{else}}
+                        <a href="#" onclick="show_data('Operation input', '{{to_json request.arguments}}');return false">View input</a>
                         {{/if}}
                     </td>
-                    <td><a href="#" onclick="show_data('Operation execution result', {{#if success}}'{{result}}'{{else}}'{{errorMsg}}'{{/if}});return false">View result</a></td>
-                    <td>{{format_date creationTime}}</td>
-                    <td class="text-right">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                Actions
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                                <li><a class="dropdown-item" href="#" onclick="replay_workflow('{{operation_name}}', '{{iteration}}', '{{../id}}'); return false">Replay from this point</a></li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                {{/each}}
-                {{#each next_inputs}}
-                <tr style="opacity: 60%">
                     <td>
-                        <span class="badge badge-primary mr-1" style="min-width: 50px">Pending</span>
-                        <code style="color: white">{{input.operation_name}}</code><small class="text-muted mx-1">({{input.iteration}})</small>
+                        {{#if response}}
+                        <a href="#" onclick="show_data('Operation execution result', {{#if response.success}}'{{to_json response.result}}'{{else}}'{{response.errorMsg}}'{{/if}});return false">View result</a>
+                        {{/if}}
                     </td>
-                    <td>
-                        <a href="#" onclick="show_data('Operation input', '{{to_json input.input}}');return false">View input</a>
-                    </td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td class="text-right">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                Actions
-                            </button>
-                            <ul class="dropdown-menu">
-                                {{#if wait_params}}
-                                <li><a class="dropdown-item" href="#" onclick="show_data('Wait parameters', '{{to_json wait_params}}');return false">View wait params</a></li>
-                                {{/if}}
-                            </ul>
-                        </div>
-                    </td>
+                    <td>{{#if response}}{{format_date response.creationTime}}{{else}}<span class="text-muted small">Not yet completed</span>{{/if}}</td>
+<#--                    <td class="text-right">-->
+<#--                        <div class="btn-group btn-group-sm" role="group">-->
+<#--                            <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">-->
+<#--                                Actions-->
+<#--                            </button>-->
+<#--                            <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">-->
+<#--                                <li><a class="dropdown-item" href="#" onclick="replay_workflow('{{operation_name}}', '{{iteration}}', '{{../id}}'); return false">Replay from this point</a></li>-->
+<#--                            </ul>-->
+<#--                        </div>-->
+<#--                    </td>-->
                 </tr>
                 {{/each}}
                 </tbody>

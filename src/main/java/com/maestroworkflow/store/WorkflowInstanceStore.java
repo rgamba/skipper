@@ -1,18 +1,15 @@
 package com.maestroworkflow.store;
 
-import com.maestroworkflow.models.Anything;
 import com.maestroworkflow.models.WorkflowInstance;
+import java.util.List;
 import lombok.NonNull;
 
-import java.util.List;
-import java.util.Map;
-
 public interface WorkflowInstanceStore {
-    void create(@NonNull WorkflowInstance workflowInstance);
+  void create(@NonNull WorkflowInstance workflowInstance);
 
-    WorkflowInstance get(@NonNull String workflowInstanceId);
+  WorkflowInstance get(@NonNull String workflowInstanceId);
 
-    List<WorkflowInstance> find();
+  List<WorkflowInstance> find();
 
-    void update(@NonNull String workflowInstanceId, @NonNull WorkflowInstance.Mutation mutation);
+  void update(@NonNull String workflowInstanceId, @NonNull WorkflowInstance.Mutation mutation);
 }

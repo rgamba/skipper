@@ -46,9 +46,18 @@
           <java>
             <googleJavaFormat>
               <version>1.7</version>
-              <style>AOSP</style>
+              <style>GOOGLE</style>
             </googleJavaFormat>
           </java>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <show>private</show>
+          <nohelp>true</nohelp>
         </configuration>
       </plugin>
     </plugins>
@@ -98,6 +107,11 @@
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-views</artifactId>
+      <version>2.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-views-freemarker</artifactId>
       <version>2.1.1</version>
     </dependency>
     <dependency>

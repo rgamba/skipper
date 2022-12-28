@@ -6,13 +6,12 @@ import com.maestroworkflow.OperationProxyFactory;
 import com.maestroworkflow.api.annotations.WorkflowOperation;
 
 public class DemoModule extends AbstractModule {
-    @Override
-    protected void configure() {
-    }
+  @Override
+  protected void configure() {}
 
-    @Provides
-    @WorkflowOperation
-    static Operations provideGreeterOperation() {
-        return OperationProxyFactory.create(Operations.class);
-    }
+  @Provides
+  @WorkflowOperation
+  static Operations provideGreeterOperation() {
+    return OperationProxyFactory.create(Operations.class);
+  }
 }
