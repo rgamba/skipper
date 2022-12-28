@@ -32,7 +32,7 @@ public class TimerProcessor {
     this.engine = engine;
     this.timerStore = timerStore;
     this.handlerMap = handlerMap;
-    executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+    executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(20);
   }
 
   @SneakyThrows
@@ -47,7 +47,7 @@ public class TimerProcessor {
         startProcessing();
       } catch (Throwable e) {
         logger.error("startProcessing threw unexpected error: {}", e.getMessage());
-        Thread.sleep(1000);
+        Thread.sleep(100);
       }
     }
   }

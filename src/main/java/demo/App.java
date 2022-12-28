@@ -28,7 +28,6 @@ public class App extends Application<AppConfig> {
   @Override
   public void run(AppConfig appConfig, Environment environment) throws Exception {
     Injector injector = Guice.createInjector(new DemoModule());
-    ;
     val migrationMgr = injector.getInstance(MySqlMigrationsManager.class);
     migrationMgr.migrate();
     val registry =

@@ -26,7 +26,7 @@ public class MySqlTimerStore implements TimerStore {
   private final SqlTransactionManager transactionManager;
   private static final Gson gson = SerdeUtils.getGson();
   private final Clock clock;
-  private static final Duration leaseDuration = Duration.ofSeconds(30);
+  private static final Duration leaseDuration = Duration.ofSeconds(10);
 
   @Inject
   public MySqlTimerStore(
@@ -68,7 +68,7 @@ public class MySqlTimerStore implements TimerStore {
                 }
                 return timer.getVersion();
               } catch (SQLException e) {
-                throw new StorageError("unable to upsert timer", e);
+                throw new StorageError("unable to upsert timer: " + e.getMessage(), e);
               }
             });
     return builder.version(version).build();
@@ -142,7 +142,7 @@ public class MySqlTimerStore implements TimerStore {
     val sql =
         ""
             + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
-            + "WHERE timeout_ts_millis <= ? "
+            + "WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis DESC, id ASC "
             + "LIMIT 100 FOR UPDATE SKIP LOCKED";
     val updateLeaseSql = "" + "UPDATE timers SET timeout_ts_millis = ? WHERE id IN ('%s')";
     return this.transactionManager.execute(
@@ -157,7 +157,7 @@ public class MySqlTimerStore implements TimerStore {
               timers.add(recordToInstance(result));
             }
           } catch (SQLException e) {
-            throw new StorageError("unexpected mysql error while trying to select timers", e);
+            throw new StorageError("unexpected mysql error while trying to select timers" + e.getMessage(), e);
           }
           // Now update the timers lease
           String ids = timers.stream().map(Timer::getTimerId).collect(Collectors.joining("','"));
@@ -166,7 +166,7 @@ public class MySqlTimerStore implements TimerStore {
             ps.executeUpdate();
           } catch (SQLException e) {
             throw new StorageError(
-                "unexpected mysql error while trying to update the timers lease", e);
+                "unexpected mysql error while trying to update the timers lease" + e.getMessage(), e);
           }
           return timers;
         });

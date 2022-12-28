@@ -127,7 +127,7 @@ public class MySqlOperationStore implements OperationStore {
               return false;
             }
             throw new StorageError(
-                "unexpected mysql error when trying to create operation response", e);
+                "unexpected mysql error when trying to create operation response" + e.getMessage(), e);
           }
         });
   }

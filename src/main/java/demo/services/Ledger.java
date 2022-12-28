@@ -23,8 +23,8 @@ public class Ledger {
       @NonNull Integer amount,
       @NonNull String concept,
       @NonNull String idempotencyToken) {
-    Utils.randomSleep();
-    Utils.randomFail();
+    //Utils.randomSleep();
+    //Utils.randomFail();
     if (transactions.containsKey(idempotencyToken)) {
       return idempotencyToken;
     }
@@ -41,8 +41,8 @@ public class Ledger {
       @NonNull Integer amount,
       @NonNull String concept,
       @NonNull String idempotencyToken) {
-    Utils.randomSleep();
-    Utils.randomFail();
+    //Utils.randomSleep();
+    //Utils.randomFail();
     if (!balances.containsKey(userId)) {
       balances.put(userId, 0);
     }
