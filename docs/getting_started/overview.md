@@ -33,4 +33,4 @@ a skipper operation **must be idempotent**.
 
 ## Next steps
 
-[How to install skipper](getting_started/installation.md)
+[How to install skipper](installation.md)

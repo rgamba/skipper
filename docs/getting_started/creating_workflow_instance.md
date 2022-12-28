@@ -37,7 +37,7 @@ Note that the workflow is not executed synchronously, which means that the `resp
 that is currently in `ACTIVE` status, which means that the actual execution (and result) of the workflow are not
 yet completed.
 
-## Queriying a workflow instance
+## Querying a workflow instance
 
 Once we have a workflow instance ID, we can check the status (and the result) of the workflow. This is a far from
 ideal way of checking the status of a workflow and waiting for it to complete. It should convey the idea at least:
