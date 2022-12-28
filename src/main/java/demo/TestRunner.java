@@ -55,8 +55,8 @@ public class TestRunner {
     final ConsoleReporter consoleReporter = ConsoleReporter.forRegistry(registry).build();
 
     val mbs = ManagementFactory.getPlatformMBeanServer();
-    int numberOfTestsPerRun = 50;
-    int numberOfRuns = 1000;
+    int numberOfTestsPerRun = 100;
+    int numberOfRuns = 60;
     control = new TestRunnerControl(numberOfTestsPerRun, numberOfRuns, false);
     ObjectName name = new ObjectName("TEST_RUNNER:name=TestRunnerControl");
     mbs.registerMBean(control, name);
@@ -93,7 +93,7 @@ public class TestRunner {
     for (val entry : workflows.entrySet()) {
       if (entry.getValue().getEnd() == null) {
         System.err.printf("workflow %s has not completed!%n", entry.getKey());
-        continue;
+        System.exit(1);
       }
       durationSum += entry.getValue().getLapse().toMillis();
       if (entry.getValue().getLapse().compareTo(minDuration) < 0) {

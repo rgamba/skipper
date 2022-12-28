@@ -20,3 +20,5 @@ jobs:
         run: mvn -Dflyway.configFiles=flyway.conf flyway:migrate
       - name: Run all tests
         run: mvn test
+      - name: Run performance tests
+        run: mvn exec:java -Dexec.mainClass="demo.TestRunner"

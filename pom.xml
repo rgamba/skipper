@@ -64,6 +64,21 @@
         <artifactId>flyway-maven-plugin</artifactId>
         <version>8.5.13</version>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executable>maven</executable>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <name>skipper</name>
