@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -15,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import skipper.models.Timer;
 import skipper.runtime.DecisionThread;
-import skipper.store.PartitionConfig;
 import skipper.store.TimerStore;
 import skipper.timers.TimerHandler;
 
@@ -28,49 +25,45 @@ public class TimerProcessor {
   private final Map<Class<? extends TimerHandler>, TimerHandler> handlerMap;
   private final ThreadPoolExecutor executor;
   final AtomicInteger prevTimersCount = new AtomicInteger();
-  private final int numberOfPartitions;
 
   @Inject
   public TimerProcessor(
       @NonNull SkipperEngine engine,
       @NonNull TimerStore timerStore,
-      @NonNull Map<Class<? extends TimerHandler>, TimerHandler> handlerMap, int numberOfPartitions) {
+      @NonNull Map<Class<? extends TimerHandler>, TimerHandler> handlerMap) {
     this.engine = engine;
     this.timerStore = timerStore;
     this.handlerMap = handlerMap;
-    this.numberOfPartitions = numberOfPartitions;
     executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
   }
 
   @SneakyThrows
   public void start() {
-    Metrics.registerIntegerGauge(
-            "timers", "expired_backlog_size", () -> (int) timerStore.countExpiredTimers());
-    Metrics.registerIntegerGauge(
-            "timers", "executor.queue_size", () -> executor.getQueue().size());
-    IntStream.range(0, numberOfPartitions).forEach(i -> executor.submit(() -> startInternal(new PartitionConfig(numberOfPartitions, i))));
+    executor.submit(this::startInternal);
   }
 
   @SneakyThrows
-  private void startInternal(@NonNull PartitionConfig partitionConfig) {
-    Metrics.registerIntegerGauge("timers.expired_timer_fetch_count", String.format("partition_%d", partitionConfig.getCurrentPartition()), prevTimersCount::get);
+  private void startInternal() {
+    Metrics.registerIntegerGauge(
+        "timers", "expired_backlog_size", () -> (int) timerStore.countExpiredTimers());
+    Metrics.registerIntegerGauge("timers", "expired_timer_fetch_count", prevTimersCount::get);
     while (true) {
       try {
-        startProcessing(partitionConfig);
+        startProcessing();
       } catch (Throwable e) {
-        logger.error("startProcessing threw unexpected error for partition {}: {}", partitionConfig.getCurrentPartition(), e.getMessage());
+        logger.error("startProcessing threw unexpected error: {}", e.getMessage());
         Thread.sleep(100);
       }
     }
   }
 
   @SneakyThrows
-  private void startProcessing(@NonNull PartitionConfig partitionConfig) {
-    logger.info("starting timer processing for partition {}", partitionConfig.getCurrentPartition());
+  private void startProcessing() {
+    logger.info("starting timer processing");
     while (true) {
-      val timers = timerStore.getExpiredTimers(partitionConfig);
+      val timers = timerStore.getExpiredTimers();
       prevTimersCount.set(timers.size());
-      Metrics.getTimerProcessingCount(String.format("partition_%d", partitionConfig.getCurrentPartition())).mark(timers.size());
+      Metrics.getTimerProcessingCount("all").mark(timers.size());
       logger.debug("fetched {} timers to process", timers.size());
       if (timers.isEmpty()) {
         Thread.sleep(fetchDelay.toMillis());

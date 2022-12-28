@@ -18,7 +18,6 @@ import skipper.Metrics;
 import skipper.common.Anything;
 import skipper.models.Timer;
 import skipper.serde.SerdeUtils;
-import skipper.store.PartitionConfig;
 import skipper.store.SqlTransactionManager;
 import skipper.store.StorageError;
 import skipper.store.TimerStore;
@@ -151,14 +150,12 @@ public class MySqlTimerStore implements TimerStore {
   }
 
   @Override
-  public List<Timer> getExpiredTimers(@NonNull PartitionConfig partitionConfig) {
+  public List<Timer> getExpiredTimers() {
     val sql =
         ""
             + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
-            + "WHERE timeout_ts_millis <= ? "
-            + "  AND cast(conv(substring(md5(id), 1, 16), 16, 10) as unsigned integer) % ? = ? "
-            + "ORDER BY timeout_ts_millis ASC, id ASC "
-            + "LIMIT 5000";
+            + "WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC "
+            + "LIMIT 100";
     val updateLeaseSql = "" + "UPDATE timers SET timeout_ts_millis = ? WHERE id IN ('%s')";
     try (val latencyTimer = Metrics.getStoreLatencyTimer("timers", "get_expired").time()) {
       return this.transactionManager.execute(
@@ -167,10 +164,7 @@ public class MySqlTimerStore implements TimerStore {
             List<Timer> timers = new ArrayList<>();
             val now = clock.instant();
             try (val ps = conn.prepareStatement(sql)) {
-              int i = 0;
-              ps.setLong(++i, now.toEpochMilli());
-              ps.setInt(++i, partitionConfig.getNumberOfPartitions());
-              ps.setInt(++i, partitionConfig.getCurrentPartition());
+              ps.setLong(1, now.toEpochMilli());
               val result = ps.executeQuery();
               while (result.next()) {
                 timers.add(recordToInstance(result));

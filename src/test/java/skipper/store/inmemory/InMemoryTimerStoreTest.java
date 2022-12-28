@@ -11,7 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import skipper.common.Anything;
 import skipper.models.Timer;
-import skipper.store.PartitionConfig;
 import skipper.timers.TimerHandler;
 
 public class InMemoryTimerStoreTest {
@@ -47,11 +46,11 @@ public class InMemoryTimerStoreTest {
         t1Mod.toBuilder().version(1).timeout(clock.instant().plus(Duration.ofSeconds(10))).build();
     assertEquals(expectedNew, store.get(t1.getTimerId()));
     // Test fetch
-    val result = store.getExpiredTimers(new PartitionConfig(1, 1));
+    val result = store.getExpiredTimers();
     assertEquals(1, result.size());
     assertEquals(t2, result.get(0));
     // Fetching again should produce no results, since we should've taken a lease on t2
-    assertEquals(0, store.getExpiredTimers(new PartitionConfig(1, 1)).size());
+    assertEquals(0, store.getExpiredTimers().size());
     // Verify that the lease for t2 is 30 secs in the future
     val newT2 = store.get(t2.getTimerId());
     val expectedT2 = t2.toBuilder().timeout(clock.instant().plus(Duration.ofSeconds(30))).build();

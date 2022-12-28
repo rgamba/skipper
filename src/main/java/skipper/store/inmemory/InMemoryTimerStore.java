@@ -13,7 +13,6 @@ import lombok.NonNull;
 import lombok.val;
 import skipper.common.Anything;
 import skipper.models.Timer;
-import skipper.store.PartitionConfig;
 import skipper.store.TimerStore;
 
 @Singleton
@@ -97,7 +96,7 @@ public class InMemoryTimerStore implements TimerStore {
   }
 
   @Override
-  public List<Timer> getExpiredTimers(@NonNull PartitionConfig partitionConfig) {
+  public List<Timer> getExpiredTimers() {
     lock.lock();
     try {
       List<Timer> result = new ArrayList<>();

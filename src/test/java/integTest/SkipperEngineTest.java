@@ -35,7 +35,10 @@ import skipper.module.SkipperEngineFactory;
 import skipper.module.SkipperModule;
 import skipper.runtime.DecisionThread;
 import skipper.runtime.WorkflowContext;
-import skipper.store.*;
+import skipper.store.OperationStore;
+import skipper.store.SqlTransactionManager;
+import skipper.store.TimerStore;
+import skipper.store.WorkflowInstanceStore;
 import skipper.timers.DecisionTimerHandler;
 import skipper.timers.OperationRequestTimerHandler;
 import skipper.timers.WorkflowInstanceCallbackTimerHandler;
@@ -156,7 +159,7 @@ public class SkipperEngineTest {
         response.getWorkflowInstance(), instanceStore.get(response.getWorkflowInstance().getId()));
     Thread.sleep(500);
     // Workflow creation should've queued a decision request in the timers datastore
-    var timers = timerStore.getExpiredTimers(new PartitionConfig(1, 0));
+    var timers = timerStore.getExpiredTimers();
     assertEquals(1, timers.size());
 
     // The first decision should return an operation request
@@ -170,7 +173,7 @@ public class SkipperEngineTest {
     var instance = engine.getWorkflowInstance(response.getWorkflowInstance().getId());
     assertEquals(WorkflowInstance.Status.ACTIVE, instance.getStatus());
     assertNull(instance.getResult());
-    timers = timerStore.getExpiredTimers(new PartitionConfig(1, 0));
+    timers = timerStore.getExpiredTimers();
     assertEquals(1, timers.size());
     var timer = timerStore.get(timers.get(0).getTimerId());
     assertEquals(timer.getHandlerClazz(), OperationRequestTimerHandler.class);
@@ -180,7 +183,7 @@ public class SkipperEngineTest {
     val opRequestId = (String) timer.getPayload().getValue();
     engine.processOperationRequest(opRequestId);
     // Operation request should've scheduled a decision request
-    timers = timerStore.getExpiredTimers(new PartitionConfig(1, 0));
+    timers = timerStore.getExpiredTimers();
     assertEquals(1, timers.size());
     timer = timerStore.get(timers.get(0).getTimerId());
     assertEquals(timer.getHandlerClazz(), DecisionTimerHandler.class);
@@ -214,7 +217,7 @@ public class SkipperEngineTest {
     // 5. After processing the decision and as a result of the workflow being completed, a
     // callback timer should've
     // been created.
-    timers = timerStore.getExpiredTimers(new PartitionConfig(1, 0));
+    timers = timerStore.getExpiredTimers();
     assertEquals(1, timers.size());
     timer = timerStore.get(timers.get(0).getTimerId());
     assertEquals(timer.getHandlerClazz(), WorkflowInstanceCallbackTimerHandler.class);
