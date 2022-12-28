@@ -52,12 +52,15 @@ public class SyncDecisionExecutor extends DecisionExecutor {
       decisionResponseBuilder.newState(response.getNewState());
       decisionResponseBuilder.statusReason(response.getStatusReason());
       decisionResponseBuilder.result(response.getResult());
-      if (response.getWaitForDuration() != null) {
-        // If a wait is required, we no longer can proceed synchronously
+      operationRequests = response.getOperationRequests();
+      if (response.getWaitForDuration() != null
+          || operationRequests.stream().anyMatch(req -> req.getOperationType().isWorkflow())) {
+        // If a wait is required, or we need to execute sub-workflow, we no longer can proceed
+        // synchronously
         decisionResponseBuilder.operationRequests(response.getOperationRequests());
+        decisionResponseBuilder.waitForDuration(response.getWaitForDuration());
         break;
       }
-      operationRequests = response.getOperationRequests();
       for (val opResponse : executeOperations(operationRequests, registry)) {
         if (opResponse.isTransient()) {
           // Non-transient operation results cannot be processed synchronously,

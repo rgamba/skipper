@@ -1,5 +1,7 @@
 package demo;
 
+import static skipper.Metrics.registry;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import demo.operations.Operations;
@@ -28,6 +30,7 @@ public class App extends Application<AppConfig> {
   @Override
   public void run(AppConfig appConfig, Environment environment) throws Exception {
     Injector injector = Guice.createInjector(new DemoModule());
+
     val migrationMgr = injector.getInstance(MySqlMigrationsManager.class);
     migrationMgr.migrate();
     val registry =

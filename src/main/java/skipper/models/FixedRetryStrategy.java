@@ -9,8 +9,8 @@ import lombok.Value;
 @Value
 @Builder
 public class FixedRetryStrategy implements RetryStrategy {
-  @NonNull Duration retryDelay;
-  @NonNull int maxRetries;
+  @NonNull public Duration retryDelay;
+  @NonNull public int maxRetries;
 
   @Override
   public Optional<Duration> getNextRetryDelay(int currentRetries) {

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>skipper</groupId>
   <artifactId>skipper-core</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1.1</version>
   <build>
     <plugins>
       <plugin>
@@ -114,9 +114,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javassist</groupId>
+      <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <version>3.12.1.GA</version>
+      <version>3.29.1-GA</version>
     </dependency>
     <dependency>
       <groupId>io.dropwizard</groupId>
@@ -136,12 +136,12 @@
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
-      <version>3.1.2</version>
+      <version>4.2.14</version>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-jmx</artifactId>
-      <version>4.2.0</version>
+      <version>4.2.14</version>
     </dependency>
     <dependency>
       <groupId>com.github.stephenc.jcip</groupId>
