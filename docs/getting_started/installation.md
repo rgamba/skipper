@@ -82,3 +82,7 @@ Skipper provides an admin UI to help triage and debug workflows. If using `jerse
 ```java
 environment.jersey().register(new AdminResource(engine));
 ```
+
+## Next steps
+
+[Learn how to create workflow operations](creating_operations.md)

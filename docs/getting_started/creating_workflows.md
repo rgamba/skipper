@@ -71,6 +71,10 @@ Add the following line on the dependency registry builder:
 .addWorkflow(() -> injector.getInstance(TransferWorkflow.class))
 ```
 
+## Next steps
+
+Now that you've created your first workflow definition, it's time to learn how to create the first instance of it!
+[Creating workflow instances](creating_workflow_instance.md)
 
 
 

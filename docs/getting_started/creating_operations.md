@@ -47,3 +47,7 @@ DependencyRegistry registry = DependencyRegistry.builder()
         .addOperation(() -> injector.getInstance(TransferOperations.class))
         .build();
 ```
+
+## Next steps
+
+[Learn how to create workflow definitions](creating_workflows.md)

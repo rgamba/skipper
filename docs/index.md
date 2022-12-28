@@ -24,3 +24,9 @@ by just focusing on the business logic.
 - The workflow needs to be executed synchronously.
 - The business logic is very simple (1 or 2 sequential steps). Even though skipper could deal with it, a simple task runner will take care of it.
 - The number of steps of the workflow are dynamically created are runtime and not know upfront
+
+## Next steps
+
+Ready to learn more? [Read the overview](/docs/overview.md) to learn more about skipper's concepts.
+
+or ready to get started? [Jump to the installation guide](/docs/installation.md)!
