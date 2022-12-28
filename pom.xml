@@ -20,7 +20,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.3.0</version>
       </plugin>
-
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
@@ -59,6 +58,11 @@
           <show>private</show>
           <nohelp>true</nohelp>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <version>8.5.13</version>
       </plugin>
     </plugins>
   </build>

@@ -9,5 +9,14 @@ jobs:
         uses: actions/checkout@v3
       - name: Running static analysis
         run: mvn spotless:check
-      - name: Running all tests
+      - name: Set up MySQL
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql version: '8.0'
+          mysql database: 'maestro'
+          mysql root password: 'root'
+          mysql user: 'root'
+      - name: Run DB migrations
+        run: mvn -Dflyway.configFiles=flyway.conf flyway:migrate
+      - name: Run all tests
         run: mvn test
