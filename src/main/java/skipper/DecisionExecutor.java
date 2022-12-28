@@ -44,7 +44,7 @@ public class DecisionExecutor {
       reason += Arrays.toString(e.getStackTrace());
       builder.statusReason(reason == null ? "No error message" : reason);
     }
-    return builder.build();
+    return builder.operationResponses(new ArrayList<>()).build();
   }
 
   @SneakyThrows

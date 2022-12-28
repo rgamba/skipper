@@ -15,7 +15,7 @@ an account and credit deposits money into an account).
 
 ```java
 public class TransferOperations {
-    public TransferOperations() {} // No-args constructor is required by Skipper
+    public TransferOperations() {} // No-args constructor is required by Skipper, will fix in the future
     
     public boolean credit(String account, long amount) {
         // Real implementations will implement all the logic needed to actually perform the operation here
@@ -24,7 +24,11 @@ public class TransferOperations {
         return true;
     }
     
-    public boolean debit(String account, long amount) {
+    // Note that all expected exceptions must be checked. All other exceptions will be considered unexpected errors
+    // and will be retried by skipper according to the retry policy.
+    // In this case, not having enough balance is an app-level error that should be expected (retries will be of no use)
+    // so it must be checked.
+    public boolean debit(String account, long amount) throws NotEnouthBalance {
         return true;
     }
 }

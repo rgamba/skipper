@@ -160,7 +160,7 @@ public class MySqlTimerStore implements TimerStore {
             ""
                 + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
                 + "WHERE id IN ('%s') "
-                + "LIMIT 100 FOR UPDATE SKIP LOCKED",
+                + "FOR UPDATE SKIP LOCKED",
             String.join("','", expiredIds));
     val updateLeaseSql = "" + "UPDATE timers SET timeout_ts_millis = ? WHERE id IN ('%s')";
     try (val latencyTimer = Metrics.getStoreLatencyTimer("timers", "get_expired").time()) {
@@ -196,7 +196,7 @@ public class MySqlTimerStore implements TimerStore {
 
   private List<String> getExpiredIds() {
     val sql =
-        "SELECT id FROM timers WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC LIMIT 100";
+        "SELECT id FROM timers WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC LIMIT 300";
     return this.transactionManager.execute(
         conn -> {
           try (val ps = conn.prepareStatement(sql)) {

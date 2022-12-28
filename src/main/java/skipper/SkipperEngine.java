@@ -179,6 +179,9 @@ public class SkipperEngine {
               .build();
       workflowInstanceStore.update(workflowInstanceId, mutation, workflowInstance.getVersion());
     }
+    if (!decisionResponse.getOperationResponses().isEmpty()) {
+      decisionResponse.getOperationResponses().forEach(operationStore::createOperationResponse);
+    }
 
     if (decisionResponse.getNewStatus().isCompleted()
         || decisionResponse.getNewStatus().isError()) {
