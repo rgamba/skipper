@@ -5,21 +5,6 @@ import static junit.framework.TestCase.*;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.maestroworkflow.MaestroEngine;
-import com.maestroworkflow.OperationProxyFactory;
-import com.maestroworkflow.api.*;
-import com.maestroworkflow.api.annotations.StateField;
-import com.maestroworkflow.api.annotations.WorkflowMethod;
-import com.maestroworkflow.models.*;
-import com.maestroworkflow.module.MaestroEngineFactory;
-import com.maestroworkflow.module.MaestroModule;
-import com.maestroworkflow.store.OperationStore;
-import com.maestroworkflow.store.SqlTransactionManager;
-import com.maestroworkflow.store.TimerStore;
-import com.maestroworkflow.store.WorkflowInstanceStore;
-import com.maestroworkflow.timers.DecisionTimerHandler;
-import com.maestroworkflow.timers.OperationRequestTimerHandler;
-import com.maestroworkflow.timers.WorkflowInstanceCallbackTimerHandler;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +13,27 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
 import lombok.var;
+import maestro.MaestroEngine;
+import maestro.OperationProxyFactory;
+import maestro.api.CallbackHandler;
+import maestro.api.MaestroWorkflow;
+import maestro.api.WorkflowContext;
+import maestro.api.WorkflowCreationRequest;
+import maestro.api.annotations.StateField;
+import maestro.api.annotations.WorkflowMethod;
+import maestro.common.Anything;
+import maestro.models.OperationType;
+import maestro.models.WorkflowInstance;
+import maestro.models.WorkflowType;
+import maestro.module.MaestroEngineFactory;
+import maestro.module.MaestroModule;
+import maestro.store.OperationStore;
+import maestro.store.SqlTransactionManager;
+import maestro.store.TimerStore;
+import maestro.store.WorkflowInstanceStore;
+import maestro.timers.DecisionTimerHandler;
+import maestro.timers.OperationRequestTimerHandler;
+import maestro.timers.WorkflowInstanceCallbackTimerHandler;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Before;
@@ -91,7 +97,10 @@ public class MaestroEngineTest {
 
   @Before
   public void setUp() {
-    injector = Guice.createInjector(new MaestroModule());
+    injector =
+        Guice.createInjector(
+            new MaestroModule(
+                "jdbc:mysql://localhost:3306/maestro?serverTimezone=UTC", "root", "root"));
     injector.getInstance(SqlTransactionManager.class).begin(); // Begin "global" test transaction
 
     instanceStore = injector.getInstance(WorkflowInstanceStore.class);

@@ -1,13 +1,15 @@
 package demo;
 
-import com.maestroworkflow.OperationProxyFactory;
-import com.maestroworkflow.api.*;
-import com.maestroworkflow.api.annotations.SignalConsumer;
-import com.maestroworkflow.api.annotations.StateField;
-import com.maestroworkflow.api.annotations.WorkflowMethod;
-import com.maestroworkflow.models.FixedRetryStrategy;
 import java.time.Duration;
 import lombok.NonNull;
+import maestro.OperationProxyFactory;
+import maestro.api.MaestroWorkflow;
+import maestro.api.OperationConfig;
+import maestro.api.WaitTimeout;
+import maestro.api.annotations.SignalConsumer;
+import maestro.api.annotations.StateField;
+import maestro.api.annotations.WorkflowMethod;
+import maestro.models.FixedRetryStrategy;
 
 public class TransferWorkflow implements MaestroWorkflow {
   private final Operations operations =
@@ -33,7 +35,7 @@ public class TransferWorkflow implements MaestroWorkflow {
       if (this.operations.credit(to, amount)) {
         try {
           counterValue = 2;
-          waitUntil(() -> isApproved, Duration.ofSeconds(1));
+          waitUntil(() -> isApproved, Duration.ofSeconds(6));
           counterValue = 3;
           this.approvalWorkflow.startApproval(to);
           String approvalReason = this.approvalWorkflow.startApproval(to);

@@ -1,9 +1,9 @@
 package demo;
 
-import com.maestroworkflow.api.WorkflowContext;
 import java.time.Instant;
 import java.util.ArrayList;
 import lombok.val;
+import maestro.api.WorkflowContext;
 import org.junit.Test;
 
 public class TransferWorkflowTest {

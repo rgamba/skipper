@@ -1,11 +1,11 @@
 package demo;
 
-import com.maestroworkflow.OperationProxyFactory;
-import com.maestroworkflow.api.MaestroWorkflow;
-import com.maestroworkflow.api.OperationConfig;
-import com.maestroworkflow.api.annotations.WorkflowMethod;
-import com.maestroworkflow.models.FixedRetryStrategy;
 import java.time.Duration;
+import maestro.OperationProxyFactory;
+import maestro.api.MaestroWorkflow;
+import maestro.api.OperationConfig;
+import maestro.api.annotations.WorkflowMethod;
+import maestro.models.FixedRetryStrategy;
 
 public class ApprovalWorkflow implements MaestroWorkflow {
   private final Operations operations =

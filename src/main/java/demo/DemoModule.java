@@ -2,8 +2,8 @@ package demo;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.maestroworkflow.OperationProxyFactory;
-import com.maestroworkflow.api.annotations.WorkflowOperation;
+import maestro.OperationProxyFactory;
+import maestro.api.annotations.WorkflowOperation;
 
 public class DemoModule extends AbstractModule {
   @Override
