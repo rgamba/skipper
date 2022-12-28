@@ -1,0 +1,13 @@
+name: Skipper CI
+run-name: ${{ github.actor }} running CI
+on: [push]
+jobs:
+  CI-Jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Running static analysis
+        run: mvn spotless:check
+      - name: Running all tests
+        run: mvn test
