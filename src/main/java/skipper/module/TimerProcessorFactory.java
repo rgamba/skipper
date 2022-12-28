@@ -39,6 +39,6 @@ public class TimerProcessorFactory {
             put(WorkflowInstanceCallbackTimerHandler.class, workflowInstanceCallbackTimerHandler);
           }
         };
-    return new TimerProcessor(engine, timerStore, timerHandlers);
+    return new TimerProcessor(engine, timerStore, timerHandlers, 1);
   }
 }

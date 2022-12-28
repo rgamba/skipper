@@ -61,7 +61,7 @@ public class TestRunner {
     ObjectName name = new ObjectName("TEST_RUNNER:name=TestRunnerControl");
     mbs.registerMBean(control, name);
 
-    Injector injector = Guice.createInjector(new DemoModule());
+    Injector injector = Guice.createInjector(new DemoModule("jdbc:mysql://localhost:3306/maestro?serverTimezone=UTC", "root", "root"));
     val migrationMgr = injector.getInstance(MySqlMigrationsManager.class);
     migrationMgr.migrate();
 
@@ -76,7 +76,6 @@ public class TestRunner {
     val engine = injector.getInstance(SkipperEngineFactory.class).create(registry);
     val processor = injector.getInstance(TimerProcessorFactory.class).create(engine);
     processor.start();
-    Instant startTime = Instant.now();
     System.out.println("Starting tests...");
     runTests(engine);
 

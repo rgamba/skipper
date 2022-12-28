@@ -27,7 +27,7 @@ public class App extends Application<AppConfig> {
 
   @Override
   public void run(AppConfig appConfig, Environment environment) throws Exception {
-    Injector injector = Guice.createInjector(new DemoModule());
+    Injector injector = Guice.createInjector(new DemoModule("jdbc:mysql://localhost:3306/maestro?serverTimezone=UTC", "root", "root"));
     val migrationMgr = injector.getInstance(MySqlMigrationsManager.class);
     migrationMgr.migrate();
     val registry =

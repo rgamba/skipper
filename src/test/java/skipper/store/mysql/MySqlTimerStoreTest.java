@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import skipper.common.Anything;
 import skipper.models.Timer;
+import skipper.store.PartitionConfig;
 import skipper.store.SqlTestHelper;
 import skipper.timers.TimerHandler;
 
@@ -82,11 +83,11 @@ public class MySqlTimerStoreTest extends SqlTestHelper {
     store.createOrUpdate(t2);
 
     // Test fetch
-    val result = store.getExpiredTimers();
+    val result = store.getExpiredTimers(new PartitionConfig(1, 0));
     assertEquals(1, result.size());
     assertEquals(t2, result.get(0));
     // Fetching again should produce no results, since we should've taken a lease on t2
-    assertEquals(0, store.getExpiredTimers().size());
+    assertEquals(0, store.getExpiredTimers(new PartitionConfig(1, 0)).size());
     // Verify that the lease for t2 is 30 secs in the future
     val newT2 = store.get(t2.getTimerId());
     val expectedT2 =
@@ -104,10 +105,32 @@ public class MySqlTimerStoreTest extends SqlTestHelper {
             .payload(new Anything(String.class, "payload1"))
             .build();
     store.createOrUpdate(t1);
-    var result = store.getExpiredTimers();
+    var result = store.getExpiredTimers(new PartitionConfig(1, 0));
     assertEquals(0, result.size());
     store.update(t1.getTimerId(), Duration.ZERO);
-    result = store.getExpiredTimers();
+    result = store.getExpiredTimers(new PartitionConfig(1, 0));
     assertEquals(1, result.size());
   }
+
+//  @Test
+//  public void testPartitionedFetch() {
+//    val t1 =
+//            Timer.builder()
+//                    .handlerClazz(TimerHandler.class)
+//                    .timerId("1") // Maps to shard 1
+//                    .payload(new Anything(String.class, "payload1"))
+//                    .build();
+//    val t2 = t1.toBuilder()
+//            .timerId("2") // Maps to shard 0
+//            .build();
+//    store.createOrUpdate(t1);
+//    store.createOrUpdate(t2);
+//    val result = store.getExpiredTimers(new PartitionConfig(2, 0));
+//    assertEquals(1, result.size());
+//    assertEquals(t2, result.get(0));
+//
+//    val result2 = store.getExpiredTimers(new PartitionConfig(2, 1));
+//    assertEquals(1, result2.size());
+//    assertEquals(t1, result2.get(0));
+//  }
 }

@@ -17,7 +17,7 @@ public interface TimerStore {
 
   boolean delete(@NonNull Timer timer);
 
-  List<Timer> getExpiredTimers();
+  List<Timer> getExpiredTimers(@NonNull PartitionConfig partitionConfig);
 
   long countExpiredTimers();
 }
