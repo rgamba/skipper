@@ -12,6 +12,7 @@ import java.util.List;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
+import skipper.Metrics;
 import skipper.common.Anything;
 import skipper.models.*;
 import skipper.serde.SerdeUtils;
@@ -52,9 +53,11 @@ public class MySqlOperationStore implements OperationStore {
             return ps.executeUpdate();
           } catch (SQLException e) {
             if (isDuplicateKeyError(e)) {
+              Metrics.errorCounter("operation_request", "duplicate_id").inc();
               throw new StorageError(
                   "duplicate operation request ID", e, StorageError.Type.DUPLICATE_ENTRY);
             }
+            Metrics.errorCounter("operation_request", "unknown").inc();
             throw new StorageError(
                 "unexpected mysql error when trying to create operation request", e);
           }
@@ -127,7 +130,8 @@ public class MySqlOperationStore implements OperationStore {
               return false;
             }
             throw new StorageError(
-                "unexpected mysql error when trying to create operation response" + e.getMessage(), e);
+                "unexpected mysql error when trying to create operation response" + e.getMessage(),
+                e);
           }
         });
   }

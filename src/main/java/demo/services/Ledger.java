@@ -5,6 +5,7 @@ import demo.Utils;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
@@ -13,9 +14,10 @@ import lombok.Value;
 public class Ledger {
   @Getter private final Map<String, Integer> balances = new HashMap<>();
   private final Map<String, Transaction> transactions = new LinkedHashMap<>();
+  ReentrantLock lock = new ReentrantLock();
 
   public Ledger() {
-    balances.put("system", 10000);
+    balances.put("system", 100000);
   }
 
   public String deposit(
@@ -23,17 +25,22 @@ public class Ledger {
       @NonNull Integer amount,
       @NonNull String concept,
       @NonNull String idempotencyToken) {
-    //Utils.randomSleep();
-    //Utils.randomFail();
-    if (transactions.containsKey(idempotencyToken)) {
+    Utils.randomSleep();
+    // Utils.randomFail();
+    try {
+      lock.lock();
+      if (transactions.containsKey(idempotencyToken)) {
+        return idempotencyToken;
+      }
+      if (!balances.containsKey(userId)) {
+        balances.put(userId, 0);
+      }
+      balances.put(userId, balances.get(userId) + amount);
+      transactions.put(idempotencyToken, new Transaction(userId, "deposit", amount));
       return idempotencyToken;
+    } finally {
+      lock.unlock();
     }
-    if (!balances.containsKey(userId)) {
-      balances.put(userId, 0);
-    }
-    balances.put(userId, balances.get(userId) + amount);
-    transactions.put(idempotencyToken, new Transaction(userId, "deposit", amount));
-    return idempotencyToken;
   }
 
   public String withdraw(
@@ -41,17 +48,23 @@ public class Ledger {
       @NonNull Integer amount,
       @NonNull String concept,
       @NonNull String idempotencyToken) {
-    //Utils.randomSleep();
-    //Utils.randomFail();
-    if (!balances.containsKey(userId)) {
-      balances.put(userId, 0);
+    Utils.randomSleep();
+    // Utils.randomFail();
+    try {
+      lock.lock();
+      if (!balances.containsKey(userId)) {
+        balances.put(userId, 0);
+      }
+      int balance = balances.get(userId);
+      if (balance < amount) {
+        throw new LedgerError("not enough balance");
+      }
+      balances.put(userId, balance - amount);
+      transactions.put(idempotencyToken, new Transaction(userId, "withdraw", amount));
+      return idempotencyToken;
+    } finally {
+      lock.unlock();
     }
-    if (balances.get(userId) < amount) {
-      throw new LedgerError("not enough balance");
-    }
-    balances.put(userId, balances.get(userId) - amount);
-    transactions.put(idempotencyToken, new Transaction(userId, "withdraw", amount));
-    return idempotencyToken;
   }
 
   public Transaction getTransaction(@NonNull String id) {

@@ -59,7 +59,7 @@ public class DecisionExecutor {
     val params =
         inspector.getWorkflowMethodParams(decisionRequest.getWorkflowInstance().getInitialArgs());
     Object result = null;
-    try {
+    try (val decisionTimer = Metrics.getDecisionLatencyTimer(clazz).time()) {
       result = workflowMethod.invoke(decider, params);
     } catch (IllegalAccessException e) {
       throw new IllegalStateException(

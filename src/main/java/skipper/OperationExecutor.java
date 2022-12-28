@@ -35,8 +35,10 @@ public class OperationExecutor {
     val operation = registry.getOperation(request.getOperationType().getClazz());
     Method method = getMethod(request.getOperationType());
     Stopwatch timer = Stopwatch.createStarted();
-    try {
-      logger.info("executing operation request. request={}", request);
+    try (val metricTimer =
+        Metrics.getOperationExecutionLatencyTimer(
+                request.getOperationType().getClazz(), method.getName())
+            .time()) {
       val result = method.invoke(operation, getMethodParams(method, request.getArguments()));
       if (result != null) {
         responseBuilder.result(new Anything(result.getClass(), result));

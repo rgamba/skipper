@@ -6,7 +6,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.UUID;
 import lombok.val;
+import lombok.var;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,7 +89,25 @@ public class MySqlTimerStoreTest extends SqlTestHelper {
     assertEquals(0, store.getExpiredTimers().size());
     // Verify that the lease for t2 is 30 secs in the future
     val newT2 = store.get(t2.getTimerId());
-    val expectedT2 = t2.toBuilder().timeout(clock.instant().plus(Duration.ofSeconds(30))).build();
+    val expectedT2 =
+        t2.toBuilder().timeout(clock.instant().plus(MySqlTimerStore.leaseDuration)).build();
     Assert.assertEquals(expectedT2, newT2);
+  }
+
+  @Test
+  public void testUpdate() {
+    val t1 =
+        Timer.builder()
+            .handlerClazz(TimerHandler.class)
+            .timerId(UUID.randomUUID().toString())
+            .timeout(clock.instant().plus(Duration.ofSeconds(10)))
+            .payload(new Anything(String.class, "payload1"))
+            .build();
+    store.createOrUpdate(t1);
+    var result = store.getExpiredTimers();
+    assertEquals(0, result.size());
+    store.update(t1.getTimerId(), Duration.ZERO);
+    result = store.getExpiredTimers();
+    assertEquals(1, result.size());
   }
 }

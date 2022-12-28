@@ -18,4 +18,6 @@ public interface TimerStore {
   boolean delete(@NonNull Timer timer);
 
   List<Timer> getExpiredTimers();
+
+  long countExpiredTimers();
 }

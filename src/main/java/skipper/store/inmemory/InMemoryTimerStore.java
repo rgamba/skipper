@@ -124,4 +124,18 @@ public class InMemoryTimerStore implements TimerStore {
   private Duration getLeaseDuration() {
     return Duration.ofSeconds(30);
   }
+
+  @Override
+  public long countExpiredTimers() {
+    lock.lock();
+    try {
+      List<Timer> result = new ArrayList<>();
+      return data.stream()
+          .filter(
+              timer -> timer.getTimeout() == null || timer.getTimeout().isBefore(clock.instant()))
+          .count();
+    } finally {
+      lock.unlock();
+    }
+  }
 }

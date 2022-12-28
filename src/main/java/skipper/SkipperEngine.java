@@ -79,6 +79,7 @@ public class SkipperEngine {
     workflowInstanceStore.create(workflowInstance);
     log.debug("workflow instance persisted on storage {}", workflowInstance);
     scheduleDecision(workflowInstance.getId());
+    Metrics.WORKFLOW_INSTANCE_CREATION_COUNT.mark();
     return WorkflowCreationResponse.builder().workflowInstance(workflowInstance).build();
   }
 
@@ -144,7 +145,8 @@ public class SkipperEngine {
               } catch (StorageError e) {
                 if (e.getType().equals(StorageError.Type.DUPLICATE_ENTRY)) {
                   log.warn(
-                      "unable to persist operation request since it already existed: {}",
+                      "unable to persist operation request with id '{}' since it already existed: {}",
+                      req.getOperationRequestId(),
                       e.getMessage());
                 } else {
                   throw e;
@@ -164,22 +166,35 @@ public class SkipperEngine {
     }
     log.info("decision response: {}", decisionResponse);
 
-    val mutation =
-        WorkflowInstance.Mutation.builder()
-            .status(decisionResponse.getNewStatus())
-            .statusReason(
-                decisionResponse.getStatusReason() != null
-                    ? decisionResponse.getStatusReason()
-                    : null)
-            .state(decisionResponse.getNewState() != null ? decisionResponse.getNewState() : null)
-            .result(decisionResponse.getResult() != null ? decisionResponse.getResult() : null)
-            .build();
-    workflowInstanceStore.update(workflowInstanceId, mutation, workflowInstance.getVersion());
+    if (workflowInstanceWasUpdated(workflowInstance, decisionResponse)) {
+      val mutation =
+          WorkflowInstance.Mutation.builder()
+              .status(decisionResponse.getNewStatus())
+              .statusReason(
+                  decisionResponse.getStatusReason() != null
+                      ? decisionResponse.getStatusReason()
+                      : null)
+              .state(decisionResponse.getNewState() != null ? decisionResponse.getNewState() : null)
+              .result(decisionResponse.getResult() != null ? decisionResponse.getResult() : null)
+              .build();
+      workflowInstanceStore.update(workflowInstanceId, mutation, workflowInstance.getVersion());
+    }
 
     if (decisionResponse.getNewStatus().isCompleted()
         || decisionResponse.getNewStatus().isError()) {
       scheduleCallback(workflowInstance);
     }
+  }
+
+  private boolean workflowInstanceWasUpdated(
+      WorkflowInstance workflowInstance, DecisionResponse decisionResponse) {
+    boolean statusChanged = decisionResponse.getNewStatus() != workflowInstance.getStatus();
+    boolean resultChanged =
+        !Objects.equals(decisionResponse.getResult(), workflowInstance.getResult());
+    boolean stateChanged =
+        decisionResponse.getNewState() != null
+            && !Objects.equals(decisionResponse.getNewState(), workflowInstance.getState());
+    return statusChanged || resultChanged || stateChanged;
   }
 
   private void resetWorkflowContextData(
@@ -257,7 +272,7 @@ public class SkipperEngine {
     if (!operationStore.createOperationResponse(operationResponse)) {
       // This shouldn't mean an infra error, but rather that no new
       // operation response was persisted because it already existed.
-      log.warn("unable to persist operation response");
+      log.warn("unable to persist operation response: {}", operationResponse);
     }
     if (isTransient) {
       val delay =

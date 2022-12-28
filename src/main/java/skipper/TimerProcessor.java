@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -20,9 +21,10 @@ public class TimerProcessor {
 
   private final SkipperEngine engine;
   private final TimerStore timerStore;
-  private final Duration fetchDelay = Duration.ofMillis(100);
+  private final Duration fetchDelay = Duration.ofMillis(50);
   private final Map<Class<? extends TimerHandler>, TimerHandler> handlerMap;
   private final ThreadPoolExecutor executor;
+  final AtomicInteger prevTimersCount = new AtomicInteger();
 
   @Inject
   public TimerProcessor(
@@ -32,7 +34,7 @@ public class TimerProcessor {
     this.engine = engine;
     this.timerStore = timerStore;
     this.handlerMap = handlerMap;
-    executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(20);
+    executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
   }
 
   @SneakyThrows
@@ -42,6 +44,9 @@ public class TimerProcessor {
 
   @SneakyThrows
   private void startInternal() {
+    Metrics.registerIntegerGauge(
+        "timers", "expired_backlog_size", () -> (int) timerStore.countExpiredTimers());
+    Metrics.registerIntegerGauge("timers", "expired_timer_fetch_count", prevTimersCount::get);
     while (true) {
       try {
         startProcessing();
@@ -57,14 +62,19 @@ public class TimerProcessor {
     logger.info("starting timer processing");
     while (true) {
       val timers = timerStore.getExpiredTimers();
+      prevTimersCount.set(timers.size());
+      Metrics.getTimerProcessingCount("all").mark(timers.size());
       logger.debug("fetched {} timers to process", timers.size());
       if (timers.isEmpty()) {
         Thread.sleep(fetchDelay.toMillis());
         continue;
       }
+
       timers.forEach(
           timer -> {
-            executor.execute(() -> processTimer(timer));
+            try (val unused = Metrics.TIMERS_DISPATCH_LATENCY_TIMER.time()) {
+              executor.execute(() -> processTimer(timer));
+            }
           });
     }
   }
@@ -82,7 +92,20 @@ public class TimerProcessor {
             "unable to delete the timer as it was probably updated by the handler. timer={}", t);
       }
     } catch (Exception e) {
-      logger.error("error while processing timer: {}\n{}", e.getMessage(), e.getStackTrace());
+      logger.warn(
+          "error while processing timer '{}': {}\n{}",
+          t.getTimerId(),
+          e.getMessage(),
+          e.getStackTrace());
+      try {
+        timerStore.update(
+            t.getTimerId(), Duration.ZERO); // Give it some breathing room before we retry
+      } catch (Exception e1) {
+        logger.error(
+            "unable to re-schedule timer '{}', it will be re-executed on lease expiration. error={}",
+            t.getTimerId(),
+            e1.getMessage());
+      }
     } finally {
       DecisionThread.clear();
     }

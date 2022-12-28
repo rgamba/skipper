@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
+import skipper.Metrics;
 import skipper.api.CallbackHandler;
 import skipper.common.Anything;
 import skipper.models.WorkflowInstance;
@@ -198,26 +199,32 @@ public class MySqlWorkflowInstanceStore implements WorkflowInstanceStore {
             + assignments
             + ", version = version + 1 "
             + "WHERE id = ? AND version = ?";
-    int updatedRows =
-        this.transactionManager.execute(
-            conn -> {
-              try {
-                try (val ps = conn.prepareStatement(sql)) {
-                  int i = 0;
-                  for (val entry : fieldsToUpdate.entrySet()) {
-                    ps.setString(++i, entry.getValue());
+    int updatedRows;
+    try (val ignored = Metrics.getStoreLatencyTimer("workflow_instance", "update").time()) {
+      updatedRows =
+          this.transactionManager.execute(
+              conn -> {
+                try {
+                  try (val ps = conn.prepareStatement(sql)) {
+                    int i = 0;
+                    for (val entry : fieldsToUpdate.entrySet()) {
+                      ps.setString(++i, entry.getValue());
+                    }
+                    ps.setString(++i, workflowInstanceId);
+                    ps.setInt(++i, version);
+                    return ps.executeUpdate();
                   }
-                  ps.setString(++i, workflowInstanceId);
-                  ps.setInt(++i, version);
-                  return ps.executeUpdate();
+                } catch (SQLException e) {
+                  throw new StorageError("unexpected mysql error", e);
                 }
-              } catch (SQLException e) {
-                throw new StorageError("unexpected mysql error", e);
-              }
-            });
+              });
+    }
     if (updatedRows < 1) {
+      Metrics.errorCounter("workflow_instance", "optimistic_lock").inc();
       throw new StorageError(
-          "unable to update workflow instance, probably a caused by an optimistic lock error!");
+          "unable to update workflow instance '"
+              + workflowInstanceId
+              + "', probably a caused by an optimistic lock error!");
     }
   }
 }

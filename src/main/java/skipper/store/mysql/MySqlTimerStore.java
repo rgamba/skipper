@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
+import skipper.Metrics;
 import skipper.common.Anything;
 import skipper.models.Timer;
 import skipper.serde.SerdeUtils;
@@ -26,7 +27,7 @@ public class MySqlTimerStore implements TimerStore {
   private final SqlTransactionManager transactionManager;
   private static final Gson gson = SerdeUtils.getGson();
   private final Clock clock;
-  private static final Duration leaseDuration = Duration.ofSeconds(10);
+  public static final Duration leaseDuration = Duration.ofSeconds(15);
 
   @Inject
   public MySqlTimerStore(
@@ -68,6 +69,7 @@ public class MySqlTimerStore implements TimerStore {
                 }
                 return timer.getVersion();
               } catch (SQLException e) {
+                Metrics.errorCounter("timer", "unknown").inc();
                 throw new StorageError("unable to upsert timer: " + e.getMessage(), e);
               }
             });
@@ -113,7 +115,17 @@ public class MySqlTimerStore implements TimerStore {
 
   @Override
   public void update(@NonNull String timerId, Duration timeout) {
-    throw new UnsupportedOperationException();
+    val sql = "UPDATE timers SET timeout_ts_millis = ? WHERE id = ?";
+    this.transactionManager.execute(
+        conn -> {
+          try (val ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, clock.instant().plus(timeout).toEpochMilli());
+            ps.setString(2, timerId);
+            return ps.executeUpdate();
+          } catch (SQLException e) {
+            throw new StorageError("unable to update timer: " + e.getMessage(), e);
+          }
+        });
   }
 
   @Override
@@ -142,33 +154,54 @@ public class MySqlTimerStore implements TimerStore {
     val sql =
         ""
             + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
-            + "WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis DESC, id ASC "
-            + "LIMIT 100 FOR UPDATE SKIP LOCKED";
+            + "WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC "
+            + "LIMIT 100";
     val updateLeaseSql = "" + "UPDATE timers SET timeout_ts_millis = ? WHERE id IN ('%s')";
+    try (val latencyTimer = Metrics.getStoreLatencyTimer("timers", "get_expired").time()) {
+      return this.transactionManager.execute(
+          conn -> {
+            // First fetch the results
+            List<Timer> timers = new ArrayList<>();
+            val now = clock.instant();
+            try (val ps = conn.prepareStatement(sql)) {
+              ps.setLong(1, now.toEpochMilli());
+              val result = ps.executeQuery();
+              while (result.next()) {
+                timers.add(recordToInstance(result));
+              }
+            } catch (SQLException e) {
+              Metrics.errorCounter("timers", "getExpiredTimers").inc();
+              throw new StorageError(
+                  "unexpected mysql error while trying to select timers" + e.getMessage(), e);
+            }
+            // Now update the timers lease
+            String ids = timers.stream().map(Timer::getTimerId).collect(Collectors.joining("','"));
+            try (val ps = conn.prepareStatement(String.format(updateLeaseSql, ids))) {
+              ps.setLong(1, now.plus(leaseDuration).toEpochMilli());
+              ps.executeUpdate();
+            } catch (SQLException e) {
+              throw new StorageError(
+                  "unexpected mysql error while trying to update the timers lease" + e.getMessage(),
+                  e);
+            }
+            return timers;
+          });
+    }
+  }
+
+  @Override
+  public long countExpiredTimers() {
+    val sql = "SELECT count(*) FROM timers WHERE timeout_ts_millis <= ? ";
     return this.transactionManager.execute(
         conn -> {
-          // First fetch the results
-          List<Timer> timers = new ArrayList<>();
-          val now = clock.instant();
           try (val ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, now.toEpochMilli());
-            val result = ps.executeQuery();
-            while (result.next()) {
-              timers.add(recordToInstance(result));
-            }
+            ps.setLong(1, clock.instant().toEpochMilli());
+            val record = ps.executeQuery();
+            record.first();
+            return record.getLong(1);
           } catch (SQLException e) {
-            throw new StorageError("unexpected mysql error while trying to select timers" + e.getMessage(), e);
+            throw new StorageError("unable to count timers: " + e.getMessage(), e);
           }
-          // Now update the timers lease
-          String ids = timers.stream().map(Timer::getTimerId).collect(Collectors.joining("','"));
-          try (val ps = conn.prepareStatement(String.format(updateLeaseSql, ids))) {
-            ps.setLong(1, now.plus(leaseDuration).toEpochMilli());
-            ps.executeUpdate();
-          } catch (SQLException e) {
-            throw new StorageError(
-                "unexpected mysql error while trying to update the timers lease" + e.getMessage(), e);
-          }
-          return timers;
         });
   }
 }

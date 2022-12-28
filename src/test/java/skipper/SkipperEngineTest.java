@@ -89,7 +89,8 @@ public class SkipperEngineTest {
   }
 
   @Test
-  public void testProcessDecisionWhenNoOperationResponsesAndOperationRequestIsCreated() {
+  public void
+      testProcessDecisionWhenOperationResponsesAndStateIsUnchangedOperationRequestIsCreated() {
     // given
     val operationType = new OperationType(String.class, "test");
     when(workflowInstanceStore.get(eq(TEST_WORKFLOW_ID))).thenReturn(TEST_WORKFLOW_INSTANCE);
@@ -117,7 +118,6 @@ public class SkipperEngineTest {
                   }
                 })
             .newStatus(WorkflowInstance.Status.ACTIVE)
-            .newState(new HashMap<>())
             .build();
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
@@ -135,6 +135,7 @@ public class SkipperEngineTest {
     assertEquals(
         operationRequest.getOperationRequestId(), timerCaptor.getValue().getPayload().getValue());
     assertEquals(OperationRequestTimerHandler.class, timerCaptor.getValue().getHandlerClazz());
+    verify(workflowInstanceStore, times(0)).update(eq(TEST_WORKFLOW_ID), any(), anyInt());
   }
 
   @Test

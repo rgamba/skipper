@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.commons.dbcp2.BasicDataSource;
+import skipper.Metrics;
 
 @Singleton
 public class SqlTransactionManager {
@@ -40,7 +42,7 @@ public class SqlTransactionManager {
   @SneakyThrows
   public <T> T execute(Function<Connection, T> lambda) {
     boolean inTransaction = currentTransaction.get() != null;
-    try {
+    try (val latencyTimer = Metrics.getStoreLatencyTimer("trx_mgr", "execute").time()) {
       if (!inTransaction) {
         begin();
       }
@@ -49,6 +51,11 @@ public class SqlTransactionManager {
         currentTransaction.get().commit();
       }
       return result;
+    } catch (Throwable e) {
+      if (!inTransaction) {
+        currentTransaction.get().rollback();
+      }
+      throw e;
     } finally {
       if (!inTransaction) {
         currentTransaction.get().close();
@@ -69,8 +76,6 @@ public class SqlTransactionManager {
   public void commit() {
     if (currentTransaction.get() != null) {
       currentTransaction.get().commit();
-      currentTransaction.get().close();
-      currentTransaction.remove();
     }
   }
 
