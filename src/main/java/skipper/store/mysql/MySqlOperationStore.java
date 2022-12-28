@@ -205,7 +205,7 @@ public class MySqlOperationStore implements OperationStore {
           try (val ps = conn.prepareStatement(sql)) {
             ps.setString(1, operationRequestId);
             val result = ps.executeQuery();
-            if (!result.first()) {
+            if (!result.next()) {
               throw new IllegalArgumentException(
                   String.format(
                       "unable to find operation request with id '%s'", operationRequestId));

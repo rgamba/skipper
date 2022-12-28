@@ -98,7 +98,7 @@ public class MySqlWorkflowInstanceStore implements WorkflowInstanceStore {
           try (val ps = conn.prepareStatement(sql)) {
             ps.setString(1, workflowInstanceId);
             val result = ps.executeQuery();
-            if (!result.first()) {
+            if (!result.next()) {
               throw new IllegalArgumentException(
                   "unable to find workflow instance with id " + workflowInstanceId);
             }

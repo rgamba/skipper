@@ -87,7 +87,7 @@ public class MySqlTimerStore implements TimerStore {
           try (val ps = conn.prepareStatement(sql)) {
             ps.setString(1, timerId);
             val result = ps.executeQuery();
-            if (!result.first()) {
+            if (!result.next()) {
               throw new IllegalArgumentException("unable to find timer with id " + timerId);
             }
             return recordToInstance(result);
@@ -222,7 +222,7 @@ public class MySqlTimerStore implements TimerStore {
           try (val ps = conn.prepareStatement(sql)) {
             ps.setLong(1, clock.instant().toEpochMilli());
             val record = ps.executeQuery();
-            record.first();
+            record.next();
             return record.getLong(1);
           } catch (SQLException e) {
             throw new StorageError("unable to count timers: " + e.getMessage(), e);
