@@ -151,11 +151,17 @@ public class MySqlTimerStore implements TimerStore {
 
   @Override
   public List<Timer> getExpiredTimers() {
+    val expiredIds = getExpiredIds();
+    if (expiredIds.isEmpty()) {
+      return new ArrayList<>();
+    }
     val sql =
-        ""
-            + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
-            + "WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC "
-            + "LIMIT 100";
+        String.format(
+            ""
+                + "SELECT id, timeout_ts_millis, handler_clazz, payload, retries, version FROM timers "
+                + "WHERE id IN ('%s') "
+                + "LIMIT 100 FOR UPDATE SKIP LOCKED",
+            String.join("','", expiredIds));
     val updateLeaseSql = "" + "UPDATE timers SET timeout_ts_millis = ? WHERE id IN ('%s')";
     try (val latencyTimer = Metrics.getStoreLatencyTimer("timers", "get_expired").time()) {
       return this.transactionManager.execute(
@@ -164,7 +170,6 @@ public class MySqlTimerStore implements TimerStore {
             List<Timer> timers = new ArrayList<>();
             val now = clock.instant();
             try (val ps = conn.prepareStatement(sql)) {
-              ps.setLong(1, now.toEpochMilli());
               val result = ps.executeQuery();
               while (result.next()) {
                 timers.add(recordToInstance(result));
@@ -187,6 +192,26 @@ public class MySqlTimerStore implements TimerStore {
             return timers;
           });
     }
+  }
+
+  private List<String> getExpiredIds() {
+    val sql =
+        "SELECT id FROM timers WHERE timeout_ts_millis <= ? ORDER BY timeout_ts_millis ASC, id ASC LIMIT 100";
+    return this.transactionManager.execute(
+        conn -> {
+          try (val ps = conn.prepareStatement(sql)) {
+            List<String> timers = new ArrayList<>();
+            ps.setLong(1, clock.instant().toEpochMilli());
+            val result = ps.executeQuery();
+            while (result.next()) {
+              timers.add(result.getString("id"));
+            }
+            return timers;
+          } catch (SQLException e) {
+            throw new StorageError(
+                "unexpected mysql error while trying to get expired timers" + e.getMessage(), e);
+          }
+        });
   }
 
   @Override
