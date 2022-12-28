@@ -3,7 +3,6 @@ package skipper.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import java.time.Clock;
-
 import skipper.DecisionExecutor;
 import skipper.SyncDecisionExecutor;
 import skipper.store.*;

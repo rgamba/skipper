@@ -60,8 +60,9 @@ public class SyncDecisionExecutor extends DecisionExecutor {
       ;
     } while (!operationRequests.isEmpty());
     return decisionResponseBuilder
-            .operationRequests(operationRequests)
-            .operationResponses(operationResponses).build();
+        .operationRequests(operationRequests)
+        .operationResponses(operationResponses)
+        .build();
   }
 
   private List<OperationResponse> executeOperations(
@@ -70,7 +71,8 @@ public class SyncDecisionExecutor extends DecisionExecutor {
         .map(
             req -> {
               val response = operationExecutor.execute(req, registry);
-              //TODO: refactor all these code and put it in OperationExecutor to remove duplication with SkipperEngine
+              // TODO: refactor all these code and put it in OperationExecutor to remove duplication
+              // with SkipperEngine
               var responseError = response.getError();
               boolean isTransient = false;
               if (response.getStatus().equals(OperationExecutionResponse.Status.RETRIABLE_ERROR)) {
