@@ -60,6 +60,10 @@ public class MySqlOperationStoreTest extends SqlTestHelper {
     val requests2 = store.getOperationRequests(wfId2);
     assertEquals(1, requests2.size());
     assertEquals(requests2.get(0), req2);
+    store.incrementOperationRequestFailedAttempts(
+        req1.getOperationRequestId(), req1.getFailedAttempts());
+    val updatedReq = store.getOperationRequest(req1.getOperationRequestId());
+    assertEquals(1, updatedReq.getFailedAttempts());
   }
 
   @Test

@@ -95,6 +95,17 @@ public class AnythingTest {
     assertEquals(ArrayList.class, c.getClazz());
   }
 
+  @Test
+  public void testAnythingOfNullFails() {
+    assertThrows(NullPointerException.class, () -> Anything.of(null));
+  }
+
+  @Test
+  public void testWhenTypeIsPrimitive() {
+    boolean b = true;
+    Anything a = Anything.of(b);
+  }
+
   private static class Gen<T> {
     T test;
 

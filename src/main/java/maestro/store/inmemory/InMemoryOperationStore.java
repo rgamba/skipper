@@ -11,6 +11,7 @@ import lombok.NonNull;
 import maestro.models.OperationRequest;
 import maestro.models.OperationResponse;
 import maestro.store.OperationStore;
+import org.apache.commons.lang3.NotImplementedException;
 
 @Singleton
 public class InMemoryOperationStore implements OperationStore {
@@ -40,6 +41,12 @@ public class InMemoryOperationStore implements OperationStore {
     } finally {
       reqsLock.unlock();
     }
+  }
+
+  @Override
+  public void incrementOperationRequestFailedAttempts(
+      @NonNull String operationRequestId, int currentRetries) {
+    throw new NotImplementedException();
   }
 
   @Override

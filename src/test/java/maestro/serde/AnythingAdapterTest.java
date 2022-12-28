@@ -17,6 +17,7 @@ public class AnythingAdapterTest {
     val jsonBuilder = new GsonBuilder().registerTypeAdapter(Anything.class, new AnythingAdapter());
     List<WorkflowType> list = new ArrayList<>();
     list.add(new WorkflowType(MaestroWorkflow.class));
+    list.add(null);
     Anything test = Anything.of(list, WorkflowType.class);
     String ser = jsonBuilder.create().toJson(test);
     Anything deser = jsonBuilder.create().fromJson(ser, Anything.class);

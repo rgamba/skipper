@@ -1,5 +1,7 @@
 package maestro.models;
 
+import com.google.common.base.Charsets;
+import com.google.common.hash.Hashing;
 import com.google.gson.annotations.JsonAdapter;
 import java.io.Serializable;
 import java.time.Duration;
@@ -29,12 +31,32 @@ public class OperationRequest implements Serializable {
   int failedAttempts;
 
   public static String createOperationRequestId(OperationRequest req) {
-    return String.format(
-        "%s_%s_%s_%d_%d",
-        req.getWorkflowInstanceId(),
-        req.getOperationType().getClazz().getName(),
-        req.getOperationType().getMethod(),
-        req.getIteration(),
-        req.getFailedAttempts());
+    String token =
+        String.format(
+            "%s_%s_%s_%d_%d",
+            req.getWorkflowInstanceId(),
+            req.getOperationType().getClazz().getName(),
+            req.getOperationType().getMethod(),
+            req.getIteration(),
+            req.getFailedAttempts());
+    return Hashing.sha256().hashString(token, Charsets.UTF_8).toString();
+  }
+
+  /**
+   * Idempotency token is similar to the request ID, with the difference being that all execution
+   * attempts for the same request will share the same idempotency key so that it can be used by the
+   * operation handlers to dedup operation requests.
+   *
+   * @return The idempotency token
+   */
+  public String generateIdempotencyToken() {
+    String token =
+        String.format(
+            "%s_%s_%s_%d",
+            workflowInstanceId,
+            operationType.getClazz().getName(),
+            operationType.getMethod(),
+            iteration);
+    return Hashing.sha256().hashString(token, Charsets.UTF_8).toString();
   }
 }

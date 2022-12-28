@@ -143,7 +143,17 @@ public class MaestroEngine {
         .getOperationRequests()
         .forEach(
             req -> {
-              operationStore.createOperationRequest(req);
+              try {
+                operationStore.createOperationRequest(req);
+              } catch (StorageError e) {
+                if (e.getType().equals(StorageError.Type.DUPLICATE_ENTRY)) {
+                  logger.warn(
+                      "unable to persist operation request since it already existed: {}",
+                      e.getMessage());
+                } else {
+                  throw e;
+                }
+              }
               timerStore.createOrUpdate(
                   Timer.builder()
                       .handlerClazz(OperationRequestTimerHandler.class)
@@ -266,19 +276,12 @@ public class MaestroEngine {
       logger.info(
           "transient operation error, scheduling retry number {}",
           operationRequest.getFailedAttempts() + 1);
-      val newOperationRequest =
-          operationRequest
-              .toBuilder()
-              .failedAttempts(operationRequest.getFailedAttempts() + 1)
-              .build();
-      val newOperationRequestId = OperationRequest.createOperationRequestId(newOperationRequest);
-      // Create a new request with incremented failed attempts
-      operationStore.createOperationRequest(
-          newOperationRequest.toBuilder().operationRequestId(newOperationRequestId).build());
+      operationStore.incrementOperationRequestFailedAttempts(
+          operationRequest.getOperationRequestId(), operationRequest.getFailedAttempts());
       timerStore.createOrUpdate(
           Timer.builder()
               .handlerClazz(OperationRequestTimerHandler.class)
-              .payload(new Anything(String.class, newOperationRequestId))
+              .payload(new Anything(String.class, operationRequest.getOperationRequestId()))
               .timerId(UUID.randomUUID().toString())
               .timeout(clock.instant().plus(delay))
               .build());
@@ -381,6 +384,10 @@ public class MaestroEngine {
       @NonNull String signalMethodName,
       @NonNull List<Anything> signalArgs) {
     val workflowInstance = workflowInstanceStore.get(workflowInstanceId);
+    if (workflowInstance.getStatus().isCompleted()) {
+      throw new IllegalStateException(
+          "sending input signals to a completed workflow is not allowed");
+    }
 
     resetWorkflowContextData(workflowInstance, new ArrayList<>());
 

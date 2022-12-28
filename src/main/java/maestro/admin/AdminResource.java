@@ -1,7 +1,6 @@
 package maestro.admin;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -55,27 +54,28 @@ public class AdminResource {
       @PathParam("id") String workflowInstanceId) {
     val requests = engine.getWorkflowInstanceOperationRequests(workflowInstanceId);
     val responses = engine.getWorkflowInstanceOperationResults(workflowInstanceId);
-    val opReqMap =
-        requests.stream()
-            .collect(
-                Collectors.toMap(OperationRequest::getOperationRequestId, Function.identity()));
-    Set<String> usedRequests = new HashSet<>();
+    Set<String> usedRequestIds = new HashSet<>();
+
     List<ExecutionTrace> result =
         responses.stream()
             .map(
                 response -> {
-                  val req = opReqMap.get(response.getOperationRequestId());
-                  usedRequests.add(req.getOperationRequestId());
+                  val req =
+                      requests.stream()
+                          .filter(
+                              r ->
+                                  r.getOperationRequestId()
+                                      .equals(response.getOperationRequestId()))
+                          .findFirst()
+                          .get();
+                  usedRequestIds.add(req.getOperationRequestId());
                   return new ExecutionTrace(req, response);
                 })
             .collect(Collectors.toList());
 
-    opReqMap.forEach(
-        (opReqId, req) -> {
-          if (!usedRequests.contains(opReqId)) {
-            result.add(new ExecutionTrace(req, null));
-          }
-        });
+    requests.stream()
+        .filter(req -> !usedRequestIds.contains(req.getOperationRequestId()))
+        .forEach(req -> result.add(new ExecutionTrace(req, null)));
     return result;
   }
 

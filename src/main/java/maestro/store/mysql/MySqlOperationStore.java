@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
@@ -62,10 +63,31 @@ public class MySqlOperationStore implements OperationStore {
   }
 
   @Override
+  public void incrementOperationRequestFailedAttempts(
+      @NonNull String operationRequestId, int currentRetries) {
+    val sql =
+        ""
+            + "UPDATE operation_requests SET failed_attempts = failed_attempts + 1 "
+            + "WHERE id = ? AND failed_attempts = ?";
+    transactionManager.execute(
+        conn -> {
+          try (val ps = conn.prepareStatement(sql)) {
+            int i = 0;
+            ps.setString(++i, operationRequestId);
+            ps.setInt(++i, currentRetries);
+            ps.executeUpdate();
+          } catch (SQLException e) {
+            throw new StorageError("unable to increment failed attempts on operation request", e);
+          }
+          return true;
+        });
+  }
+
+  @Override
   public boolean createOperationResponse(@NonNull OperationResponse resp) {
     val sql =
         ""
-            + "INSERT INTO operation_responses (id, workflow_instance_id, operation_type, iteration, creation_time, is_success, is_transient, operation_request_id, result, error, execution_duration_millis, child_workflow_instance_id) "
+            + "INSERT INTO operation_responses (id, workflow_instance_id, operation_type, iteration, creation_time_millis, is_success, is_transient, operation_request_id, result, error, execution_duration_millis, child_workflow_instance_id) "
             + "SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM dual "
             + "WHERE NOT EXISTS ("
             + "    SELECT * FROM operation_responses "
@@ -83,7 +105,7 @@ public class MySqlOperationStore implements OperationStore {
             ps.setString(++i, resp.getWorkflowInstanceId());
             ps.setString(++i, gson.toJson(resp.getOperationType()));
             ps.setInt(++i, resp.getIteration());
-            ps.setTimestamp(++i, DateTimeUtil.instantToTimestamp(resp.getCreationTime()));
+            ps.setLong(++i, resp.getCreationTime().toEpochMilli());
             ps.setBoolean(++i, resp.isSuccess());
             ps.setBoolean(++i, resp.isTransient());
             ps.setString(++i, resp.getOperationRequestId());
@@ -120,13 +142,13 @@ public class MySqlOperationStore implements OperationStore {
     StringBuilder sql = new StringBuilder();
     sql.append(
         ""
-            + "SELECT id, workflow_instance_id, operation_type, iteration, creation_time, is_success, is_transient, operation_request_id, result, error, execution_duration_millis, child_workflow_instance_id "
+            + "SELECT id, workflow_instance_id, operation_type, iteration, creation_time_millis, is_success, is_transient, operation_request_id, result, error, execution_duration_millis, child_workflow_instance_id "
             + "FROM operation_responses "
             + "WHERE workflow_instance_id = ?");
     if (!includeTransientResponses) {
       sql.append(" AND is_transient = false");
     }
-    sql.append(" ORDER BY creation_time ASC");
+    sql.append(" ORDER BY creation_time_millis ASC");
     String finalSql = sql.toString();
     return transactionManager.execute(
         conn -> {
@@ -152,7 +174,7 @@ public class MySqlOperationStore implements OperationStore {
     builder.workflowInstanceId(result.getString("workflow_instance_id"));
     builder.operationType(gson.fromJson(result.getString("operation_type"), OperationType.class));
     builder.iteration(result.getInt("iteration"));
-    builder.creationTime(result.getTimestamp("creation_time").toInstant());
+    builder.creationTime(Instant.ofEpochMilli(result.getLong("creation_time_millis")));
     builder.isSuccess(result.getBoolean("is_success"));
     builder.isTransient(result.getBoolean("is_transient"));
     builder.operationRequestId(result.getString("operation_request_id"));
@@ -237,7 +259,12 @@ public class MySqlOperationStore implements OperationStore {
 
   @Override
   public void convertAllErrorResponsesToTransient(String workflowInstanceId) {
-    val sql = "UPDATE operation_responses SET is_transient = true WHERE workflow_instance_id = ?";
+    val sql =
+        ""
+            + "UPDATE operation_responses SET is_transient = true WHERE id IN ("
+            + "    SELECT * FROM (SELECT id FROM operation_responses WHERE workflow_instance_id = ? AND is_success = false"
+            + "    ORDER BY creation_time_millis DESC LIMIT 1) tmp"
+            + ")";
     transactionManager.execute(
         conn -> {
           try (val ps = conn.prepareStatement(sql)) {

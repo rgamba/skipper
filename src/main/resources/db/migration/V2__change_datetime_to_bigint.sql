@@ -1,0 +1,2 @@
+ALTER TABLE operation_responses RENAME COLUMN creation_time TO creation_time_millis;
+ALTER TABLE operation_responses MODIFY COLUMN creation_time_millis bigint;

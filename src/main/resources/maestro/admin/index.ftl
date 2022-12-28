@@ -25,6 +25,7 @@
         code {
             color: white;
         }
+
     </style>
 </head>
 <body>
@@ -318,7 +319,7 @@ Workflow detail view
                                 <span class="badge badge-light ml-2">{{result.clazz}}</span>
                             </div>
                             <div class="card-body">
-                                <pre style="margin-bottom: 0;">{{result.value}}</pre>
+                                <pre style="margin-bottom: 0; white-space: pre">{{to_json_tabs result.value}}</pre>
                             </div>
                         </div>
                     </div>
@@ -380,7 +381,7 @@ Workflow detail view
                     </td>
                     <td>
                         {{#if response}}
-                        <a href="#" onclick="show_data('Operation execution result', {{#if response.success}}'{{to_json response.result}}'{{else}}'{{response.errorMsg}}'{{/if}});return false">View result</a>
+                        <a href="#" onclick="show_data('Operation execution result', {{#if response.success}}'{{to_json response.result}}'{{else}}'{{to_json response.error}}'{{/if}});return false">View result</a>
                         {{/if}}
                     </td>
                     <td>{{#if response}}{{format_date response.creationTime}}{{else}}<span class="text-muted small">Not yet completed</span>{{/if}}</td>
@@ -424,6 +425,10 @@ Workflow detail view
 
     Handlebars.registerHelper('to_json', function (obj)  {
         return JSON.stringify(obj);
+    });
+
+    Handlebars.registerHelper('to_json_tabs', function (obj)  {
+        return JSON.stringify(obj, null, 4);
     });
 
     // View definitions

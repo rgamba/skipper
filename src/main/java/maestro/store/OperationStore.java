@@ -8,6 +8,9 @@ import maestro.models.OperationResponse;
 public interface OperationStore {
   boolean createOperationRequest(@NonNull OperationRequest operationRequest);
 
+  void incrementOperationRequestFailedAttempts(
+      @NonNull String operationRequestId, int currentRetries);
+
   boolean createOperationResponse(@NonNull OperationResponse operationResponse);
 
   List<OperationResponse> getOperationResponses(

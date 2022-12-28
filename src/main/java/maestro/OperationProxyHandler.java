@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import javassist.util.proxy.MethodHandler;
 import lombok.NonNull;
 import lombok.val;
+import maestro.api.MaestroWorkflow;
 import maestro.api.OperationConfig;
 import maestro.api.StopWorkflowExecution;
 import maestro.api.WorkflowContext;
@@ -70,8 +71,6 @@ public class OperationProxyHandler implements MethodHandler {
       }
       return response.get().getResult().getValue();
     }
-    val argsList =
-        Stream.of(args).map(arg -> new Anything(arg.getClass(), arg)).collect(Collectors.toList());
 
     val operationRequest =
         OperationRequest.builder()
@@ -91,13 +90,31 @@ public class OperationProxyHandler implements MethodHandler {
                     ? operationConfig.getRetryStrategy()
                     : OperationExecutor.DEFAULT_RETRY_STRATEGY)
             .timeout(Duration.ZERO)
-            .arguments(argsList)
+            .arguments(new ArrayList<>())
             .build();
     val operationRequestId = OperationRequest.createOperationRequestId(operationRequest);
+    val argsList =
+        Stream.of(args)
+            .map(
+                arg -> {
+                  if (arg == null) {
+                    return null;
+                  }
+                  if (MaestroWorkflow.IDEMPOTENCY_TOKEN_PLACEHOLDER.equals(arg)) {
+                    return Anything.of(operationRequest.generateIdempotencyToken());
+                  }
+                  return Anything.of(arg);
+                })
+            .collect(Collectors.toList());
     throw new StopWorkflowExecution(
         new ArrayList<OperationRequest>() {
           {
-            add(operationRequest.toBuilder().operationRequestId(operationRequestId).build());
+            add(
+                operationRequest
+                    .toBuilder()
+                    .operationRequestId(operationRequestId)
+                    .arguments(argsList)
+                    .build());
           }
         });
   }

@@ -4,10 +4,7 @@ import com.google.gson.annotations.JsonAdapter;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
-import lombok.val;
+import lombok.*;
 import maestro.serde.StrongType;
 import maestro.serde.StrongTypeAdapter;
 
@@ -15,12 +12,32 @@ import maestro.serde.StrongTypeAdapter;
 @Builder
 @AllArgsConstructor
 public class Anything implements Serializable {
+  /**
+   * When using reflection to get the return type of methods, when the return type is a primitive
+   * type, the type is returned as a class with the name matching the primitive name (like the map
+   * keys below) instead of the actual wrapper class. In order to fix this, in case we receive
+   * classes whos name equals any of the keys in this map, we are just going to map them back to
+   * their boxed type.
+   */
+  public static Map<String, Class<?>> primitiveMap =
+      new HashMap<String, Class<?>>() {
+        {
+          put("boolean", Boolean.class);
+          put("int", Integer.class);
+          put("float", Float.class);
+          put("byte", Byte.class);
+          put("short", Short.class);
+          put("long", Long.class);
+        }
+      };
+
   Object value;
 
   @JsonAdapter(StrongTypeAdapter.class)
   StrongType type;
 
-  public Anything(Class<?> clazz, Object value, Class<?>... parameterTypes) {
+  public Anything(
+      @NonNull Class<?> clazz, @NonNull Object value, @NonNull Class<?>... parameterTypes) {
     List<Class<?>> params =
         parameterTypes.length > 0
             ? Arrays.stream(parameterTypes).collect(Collectors.toList())
@@ -31,6 +48,9 @@ public class Anything implements Serializable {
           String.format(
               "expected %d parameter types but got %s",
               value.getClass().getTypeParameters().length, parameterTypes.length));
+    }
+    if (primitiveMap.containsKey(clazz.getName())) {
+      clazz = primitiveMap.get(clazz.getName());
     }
     this.value = clazz.cast(value);
     this.type =
@@ -79,6 +99,11 @@ public class Anything implements Serializable {
         result.add(entry.getKey().getClass());
         result.add(entry.getValue().getClass());
       }
+    }
+    // Check if its an optional
+    if (value instanceof Optional) {
+      Optional<?> object = (Optional) value;
+      object.ifPresent(o -> result.add(o.getClass()));
     }
     return result;
   }

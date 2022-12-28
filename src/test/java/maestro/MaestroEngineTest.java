@@ -1,6 +1,6 @@
 package maestro;
 
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -281,16 +281,14 @@ public class MaestroEngineTest {
     verify(operationStore, times(1)).createOperationResponse(responseCaptor.capture());
     assertFalse(responseCaptor.getValue().isSuccess());
     assertTrue(responseCaptor.getValue().isTransient());
-    ArgumentCaptor<OperationRequest> reqCaptor = ArgumentCaptor.forClass(OperationRequest.class);
-    verify(operationStore, times(1)).createOperationRequest(reqCaptor.capture());
-    assertEquals(TEST_WORKFLOW_ID, reqCaptor.getValue().getWorkflowInstanceId());
-    assertEquals(1, reqCaptor.getValue().getFailedAttempts());
+    verify(operationStore, times(1))
+        .incrementOperationRequestFailedAttempts(
+            eq(operationRequestId), eq(operationRequest.getFailedAttempts()));
+
     ArgumentCaptor<Timer> timerCaptor = ArgumentCaptor.forClass(Timer.class);
     verify(timerStore, times(1)).createOrUpdate(timerCaptor.capture());
     assertEquals(OperationRequestTimerHandler.class, timerCaptor.getValue().getHandlerClazz());
-    assertEquals(
-        reqCaptor.getValue().getOperationRequestId(),
-        timerCaptor.getValue().getPayload().getValue());
+    assertEquals(operationRequestId, timerCaptor.getValue().getPayload().getValue());
   }
 
   @Test
@@ -525,5 +523,23 @@ public class MaestroEngineTest {
     verify(timerStore, times(1)).createOrUpdate(timerCaptor.capture());
     assertEquals(DecisionTimerHandler.class, timerCaptor.getValue().getHandlerClazz());
     assertEquals(TEST_WORKFLOW_ID, timerCaptor.getValue().getPayload().getValue());
+  }
+
+  @Test
+  public void testExecuteSignalConsumerMethodWhenWorkflowIsCompleted_signalFails() {
+    val methodName = "testMethod";
+    val instance =
+        TEST_WORKFLOW_INSTANCE.toBuilder().status(WorkflowInstance.Status.COMPLETED).build();
+    when(workflowInstanceStore.get(TEST_WORKFLOW_ID)).thenReturn(instance);
+    // when
+    val error =
+        assertThrows(
+            IllegalStateException.class,
+            () -> engine.executeSignalConsumer(TEST_WORKFLOW_ID, methodName, new ArrayList<>()));
+    // then
+    assertTrue(
+        error
+            .getMessage()
+            .contains("sending input signals to a completed workflow is not allowed"));
   }
 }

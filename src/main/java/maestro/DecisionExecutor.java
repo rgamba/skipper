@@ -3,6 +3,7 @@ package maestro;
 import com.google.inject.Injector;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,11 +15,8 @@ import maestro.api.DecisionResponse;
 import maestro.api.StopWorkflowExecution;
 import maestro.common.Anything;
 import maestro.models.WorkflowInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DecisionExecutor {
-  private static Logger logger = LoggerFactory.getLogger(MaestroEngine.class);
 
   public DecisionResponse execute(
       @NonNull DecisionRequest decisionRequest, @NonNull Injector injector) {
@@ -44,6 +42,7 @@ public class DecisionExecutor {
     } catch (Exception e) {
       builder.newStatus(WorkflowInstance.Status.ERROR);
       String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+      reason += Arrays.toString(e.getStackTrace());
       builder.statusReason(reason == null ? "No error message" : reason);
     }
     return builder.build();

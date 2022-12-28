@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.val;
@@ -54,8 +54,11 @@ public class OperationExecutor {
           e.getCause() != null ? e.getCause().getClass() : e.getClass();
       Throwable error = e.getCause() != null ? e.getCause() : e;
       responseBuilder.error(new Anything(clazz, error));
-      // TODO add more logic to determine if error is retriable or not
-      responseBuilder.status(OperationExecutionResponse.Status.RETRIABLE_ERROR);
+      val status =
+          isRetriableError(error, method)
+              ? OperationExecutionResponse.Status.RETRIABLE_ERROR
+              : OperationExecutionResponse.Status.NON_RETRIABLE_ERROR;
+      responseBuilder.status(status);
     } finally {
       timer.stop();
       responseBuilder.executionDuration(timer.elapsed());
@@ -63,6 +66,19 @@ public class OperationExecutor {
     val response = responseBuilder.build();
     logger.info("operation execution response = {}", response);
     return response;
+  }
+
+  private boolean isRetriableError(Throwable error, Method method) {
+    List<Class<? extends Throwable>> commonNonRetriableErrors = new ArrayList<>();
+    commonNonRetriableErrors.add(NullPointerException.class);
+    commonNonRetriableErrors.add(IllegalArgumentException.class);
+    if (commonNonRetriableErrors.stream().anyMatch(common -> common.isInstance(error))) {
+      return false;
+    }
+    // If not a common non-retryable, check if it was a declared exception, in which case
+    // we will throw a non retryable error.
+    return Arrays.stream(method.getExceptionTypes())
+        .noneMatch(declaredEx -> declaredEx.isInstance(error));
   }
 
   private Method getMethod(OperationType operationType) {
@@ -88,13 +104,17 @@ public class OperationExecutor {
     val response = new Object[methodArgs.size()];
     for (int i = 0; i < methodArgs.size(); i++) {
       val argValue = methodArgs.get(i);
-      if (argValue.getClazz() != params[i].getType()) {
-        throw new IllegalStateException(
-            String.format(
-                "operation request provided the argument %s with type %s when the expected type is %s",
-                params[i].getName(), argValue.getClazz(), params[i].getType()));
+      if (argValue == null) {
+        response[i] = null;
+      } else {
+        if (!params[i].getType().isAssignableFrom(argValue.getClazz())) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "operation request provided the argument %s with type %s when the expected type is %s",
+                  params[i].getName(), argValue.getClazz(), params[i].getType()));
+        }
+        response[i] = argValue.getClazz().cast(argValue.getValue());
       }
-      response[i] = argValue.getClazz().cast(argValue.getValue());
     }
     return response;
   }

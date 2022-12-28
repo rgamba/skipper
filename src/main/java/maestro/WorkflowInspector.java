@@ -2,6 +2,7 @@ package maestro;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,19 +28,20 @@ public class WorkflowInspector {
   }
 
   public Map<String, Anything> getState() {
-    return getStateFields()
-        .collect(
-            Collectors.toMap(
-                Field::getName,
-                s -> {
-                  try {
-                    return new Anything(s.getType(), s.get(instance));
-                  } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(
-                        String.format(
-                            "unable to access state field %s, it must be public", s.getName()));
-                  }
-                }));
+    Map<String, Anything> result = new HashMap<>();
+    for (val field : getStateFields().collect(Collectors.toList())) {
+      try {
+        if (field.get(instance) == null) {
+          result.put(field.getName(), null);
+        } else {
+          result.put(field.getName(), new Anything(field.getType(), field.get(instance)));
+        }
+      } catch (IllegalAccessException e) {
+        throw new IllegalStateException(
+            String.format("unable to access state field %s, it must be public", field.getName()));
+      }
+    }
+    return result;
   }
 
   public void setState(@NonNull Map<String, Anything> newState) {
@@ -103,13 +105,23 @@ public class WorkflowInspector {
     val response = new Object[methodArgs.size()];
     for (int i = 0; i < methodArgs.size(); i++) {
       val argValue = methodArgs.get(i);
-      if (argValue.getClazz() != params[i].getType()) {
-        throw new IllegalStateException(
-            String.format(
-                "workflowInstance provided the argument %s with type %s when the expected type is %s",
-                params[i].getName(), argValue.getClazz(), params[i].getType()));
+      if (argValue == null) {
+        if (params[i].getType().isPrimitive()) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "null value provided for non-nullable argument '%s' in workflow method '%s'",
+                  params[i].getName(), method.getName()));
+        }
+        response[i] = null;
+      } else {
+        if (!params[i].getType().isAssignableFrom(argValue.getClazz())) {
+          throw new IllegalStateException(
+              String.format(
+                  "workflowInstance provided the argument %s with type %s when the expected type is %s",
+                  params[i].getName(), argValue.getClazz(), params[i].getType()));
+        }
+        response[i] = argValue.getClazz().cast(argValue.getValue());
       }
-      response[i] = argValue.getClazz().cast(argValue.getValue());
     }
     return response;
   }

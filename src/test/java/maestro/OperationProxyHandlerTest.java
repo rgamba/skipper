@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import lombok.val;
+import maestro.api.MaestroWorkflow;
 import maestro.api.OperationConfig;
 import maestro.api.StopWorkflowExecution;
 import maestro.api.WorkflowContext;
@@ -96,6 +97,30 @@ public class OperationProxyHandlerTest {
       assertEquals(new Anything(String.class, "a"), req.getArguments().get(0));
       assertEquals(new Anything(Integer.class, 1), req.getArguments().get(1));
       assertEquals(OperationExecutor.DEFAULT_RETRY_STRATEGY, req.getRetryStrategy());
+    }
+  }
+
+  @Test
+  public void testInvokeSubstitutesIdempotencyTokenPlaceHolder() throws Throwable {
+    Foo proxy = new Foo();
+    Method method = proxy.getClass().getDeclaredMethods()[0];
+    val responses = new ArrayList<OperationResponse>();
+    val handler =
+        new OperationProxyHandler(
+            responses,
+            new WorkflowContext("", Instant.now(), responses, Instant.MIN),
+            Foo.class,
+            null,
+            false);
+    try {
+      handler.invoke(
+          proxy, method, null, new Object[] {MaestroWorkflow.IDEMPOTENCY_TOKEN_PLACEHOLDER, 1});
+      throw new Exception("Expected invoke to throw StopWorkflowExecution");
+    } catch (StopWorkflowExecution e) {
+      assertEquals(1, e.getOperationRequests().size());
+      val req = e.getOperationRequests().get(0);
+      assertEquals(2, req.getArguments().size());
+      assertEquals(req.getArguments().get(0).getValue(), req.generateIdempotencyToken());
     }
   }
 
