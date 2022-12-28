@@ -33,7 +33,7 @@ public class TransferWorkflow implements MaestroWorkflow {
       if (this.operations.credit(to, amount)) {
         try {
           counterValue = 2;
-          waitUntil(() -> isApproved, Duration.ofSeconds(30));
+          waitUntil(() -> isApproved, Duration.ofSeconds(1));
           counterValue = 3;
           this.approvalWorkflow.startApproval(to);
           String approvalReason = this.approvalWorkflow.startApproval(to);

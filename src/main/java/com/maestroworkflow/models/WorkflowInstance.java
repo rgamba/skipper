@@ -4,6 +4,7 @@ import com.maestroworkflow.ValidationUtils;
 import com.maestroworkflow.api.CallbackHandler;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -50,7 +51,7 @@ public class WorkflowInstance implements Serializable {
     this.status = status;
     this.statusReason = statusReason;
     this.callbackHandlerClazz = callbackHandlerClazz;
-    this.creationTime = creationTime;
+    this.creationTime = creationTime.truncatedTo(ChronoUnit.SECONDS);
   }
 
   public enum Status {

@@ -165,7 +165,7 @@ public class MaestroEngine {
             .state(decisionResponse.getNewState() != null ? decisionResponse.getNewState() : null)
             .result(decisionResponse.getResult() != null ? decisionResponse.getResult() : null)
             .build();
-    workflowInstanceStore.update(workflowInstanceId, mutation);
+    workflowInstanceStore.update(workflowInstanceId, mutation, workflowInstance.getVersion());
 
     if (decisionResponse.getNewStatus().isCompleted()
         || decisionResponse.getNewStatus().isError()) {
@@ -263,13 +263,15 @@ public class MaestroEngine {
       logger.info(
           "transient operation error, scheduling retry number {}",
           operationRequest.getFailedAttempts() + 1);
-      val newOperationRequest = operationRequest
+      val newOperationRequest =
+          operationRequest
               .toBuilder()
               .failedAttempts(operationRequest.getFailedAttempts() + 1)
               .build();
       val newOperationRequestId = OperationRequest.createOperationRequestId(newOperationRequest);
       // Create a new request with incremented failed attempts
-      operationStore.createOperationRequest(newOperationRequest.toBuilder().operationRequestId(newOperationRequestId).build());
+      operationStore.createOperationRequest(
+          newOperationRequest.toBuilder().operationRequestId(newOperationRequestId).build());
       timerStore.createOrUpdate(
           Timer.builder()
               .handlerClazz(OperationRequestTimerHandler.class)
@@ -329,17 +331,20 @@ public class MaestroEngine {
    * @return The list of operation responses
    * @throws IllegalArgumentException In case the workflow instance ID provided is invalid
    */
-  public List<OperationResponse> getWorkflowInstanceOperationResults(@NonNull String workflowInstanceId) {
+  public List<OperationResponse> getWorkflowInstanceOperationResults(
+      @NonNull String workflowInstanceId) {
     return operationStore.getOperationResponses(workflowInstanceId, true);
   }
 
   /**
    * Get all operation requests for the given workflow instance
+   *
    * @param workflowInstanceId The workflow instance ID
    * @return A list of operation requests associated with the workflow
    * @throws IllegalArgumentException in case the workflow instance ID is invalid
    */
-  public List<OperationRequest> getWorkflowInstanceOperationRequests(@NonNull String workflowInstanceId) {
+  public List<OperationRequest> getWorkflowInstanceOperationRequests(
+      @NonNull String workflowInstanceId) {
     return operationStore.getOperationRequests(workflowInstanceId);
   }
 
@@ -373,7 +378,9 @@ public class MaestroEngine {
         decisionExecutor.executeSignalConsumer(
             workflowInstance, injector, signalMethodName, signalArgs);
     workflowInstanceStore.update(
-        workflowInstanceId, WorkflowInstance.Mutation.builder().state(newState).build());
+        workflowInstanceId,
+        WorkflowInstance.Mutation.builder().state(newState).build(),
+        workflowInstance.getVersion());
     scheduleDecision(workflowInstanceId);
   }
 

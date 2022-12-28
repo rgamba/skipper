@@ -70,22 +70,23 @@ public class OperationProxyHandler implements MethodHandler {
     val argsList =
         Stream.of(args).map(arg -> new Anything(arg.getClass(), arg)).collect(Collectors.toList());
 
-    val operationRequest = OperationRequest.builder()
+    val operationRequest =
+        OperationRequest.builder()
             .operationRequestId("")
             .iteration(iteration.get(method.getName()).get())
             .operationType(
-                    new OperationType(
-                            operationClazz,
-                            method.getName(),
-                            isWorkflow
-                                    ? OperationType.ClazzType.WORKFLOW
-                                    : OperationType.ClazzType.OPERATION))
+                new OperationType(
+                    operationClazz,
+                    method.getName(),
+                    isWorkflow
+                        ? OperationType.ClazzType.WORKFLOW
+                        : OperationType.ClazzType.OPERATION))
             .workflowInstanceId(context.getWorkflowInstanceId())
             .creationTime(context.getCurrentTime())
             .retryStrategy(
-                    operationConfig.getRetryStrategy() != null
-                            ? operationConfig.getRetryStrategy()
-                            : OperationExecutor.DEFAULT_RETRY_STRATEGY)
+                operationConfig.getRetryStrategy() != null
+                    ? operationConfig.getRetryStrategy()
+                    : OperationExecutor.DEFAULT_RETRY_STRATEGY)
             .timeout(Duration.ZERO)
             .arguments(argsList)
             .build();

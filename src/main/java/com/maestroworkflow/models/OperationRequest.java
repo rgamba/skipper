@@ -23,11 +23,11 @@ public class OperationRequest implements Serializable {
 
   public static String createOperationRequestId(OperationRequest req) {
     return String.format(
-            "%s_%s_%s_%d_%d",
-            req.getWorkflowInstanceId(),
-            req.getOperationType().getClazz().getName(),
-            req.getOperationType().getMethod(),
-            req.getIteration(),
-            req.getFailedAttempts());
+        "%s_%s_%s_%d_%d",
+        req.getWorkflowInstanceId(),
+        req.getOperationType().getClazz().getName(),
+        req.getOperationType().getMethod(),
+        req.getIteration(),
+        req.getFailedAttempts());
   }
 }

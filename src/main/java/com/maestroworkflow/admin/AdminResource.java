@@ -4,17 +4,14 @@ import com.maestroworkflow.MaestroEngine;
 import com.maestroworkflow.models.OperationRequest;
 import com.maestroworkflow.models.OperationResponse;
 import com.maestroworkflow.models.WorkflowInstance;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-
 import lombok.NonNull;
 import lombok.Value;
 import lombok.val;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Path("/admin")
 public class AdminResource {
@@ -23,6 +20,7 @@ public class AdminResource {
     @NonNull OperationRequest request;
     OperationResponse response;
   }
+
   private final MaestroEngine engine;
 
   public AdminResource(@NonNull MaestroEngine engine) {
@@ -56,20 +54,28 @@ public class AdminResource {
   public List<ExecutionTrace> getWorkflowInstanceOperationResponses(
       @PathParam("id") String workflowInstanceId) {
     val requests = engine.getWorkflowInstanceOperationRequests(workflowInstanceId);
-    val responses =  engine.getWorkflowInstanceOperationResults(workflowInstanceId);
-    val opReqMap = requests.stream().collect(Collectors.toMap(OperationRequest::getOperationRequestId, Function.identity()));
+    val responses = engine.getWorkflowInstanceOperationResults(workflowInstanceId);
+    val opReqMap =
+        requests.stream()
+            .collect(
+                Collectors.toMap(OperationRequest::getOperationRequestId, Function.identity()));
     Set<String> usedRequests = new HashSet<>();
-    List<ExecutionTrace> result = responses.stream().map(response -> {
-      val req = opReqMap.get(response.getOperationRequestId());
-      usedRequests.add(req.getOperationRequestId());
-      return new ExecutionTrace(req, response);
-    }).collect(Collectors.toList());
+    List<ExecutionTrace> result =
+        responses.stream()
+            .map(
+                response -> {
+                  val req = opReqMap.get(response.getOperationRequestId());
+                  usedRequests.add(req.getOperationRequestId());
+                  return new ExecutionTrace(req, response);
+                })
+            .collect(Collectors.toList());
 
-    opReqMap.forEach((opReqId, req) -> {
-      if (!usedRequests.contains(opReqId)) {
-        result.add(new ExecutionTrace(req, null));
-      }
-    });
+    opReqMap.forEach(
+        (opReqId, req) -> {
+          if (!usedRequests.contains(opReqId)) {
+            result.add(new ExecutionTrace(req, null));
+          }
+        });
     return result;
   }
 

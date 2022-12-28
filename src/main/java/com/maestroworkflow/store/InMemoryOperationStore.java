@@ -100,8 +100,8 @@ public class InMemoryOperationStore implements OperationStore {
     reqsLock.lock();
     try {
       return this.requests.stream()
-              .filter(r -> r.getWorkflowInstanceId().equals(workflowInstanceId))
-              .collect(Collectors.toList());
+          .filter(r -> r.getWorkflowInstanceId().equals(workflowInstanceId))
+          .collect(Collectors.toList());
     } finally {
       reqsLock.unlock();
     }

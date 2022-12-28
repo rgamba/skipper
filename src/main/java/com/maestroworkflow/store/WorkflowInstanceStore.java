@@ -11,5 +11,8 @@ public interface WorkflowInstanceStore {
 
   List<WorkflowInstance> find();
 
-  void update(@NonNull String workflowInstanceId, @NonNull WorkflowInstance.Mutation mutation);
+  void update(
+      @NonNull String workflowInstanceId,
+      @NonNull WorkflowInstance.Mutation mutation,
+      int currentVersion);
 }

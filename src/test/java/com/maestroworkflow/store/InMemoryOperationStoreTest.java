@@ -30,7 +30,8 @@ public class InMemoryOperationStoreTest {
         req1.toBuilder().workflowInstanceId(wfId2).operationRequestId("req2").build();
 
     assertTrue(store.createOperationRequest(req1));
-    assertFalse(store.createOperationRequest(req1)); // Trying to recreate the same operation should fail
+    assertFalse(
+        store.createOperationRequest(req1)); // Trying to recreate the same operation should fail
     assertEquals(store.getOperationRequest(req1.getOperationRequestId()), req1);
   }
 

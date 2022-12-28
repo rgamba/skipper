@@ -6,6 +6,7 @@ import com.maestroworkflow.admin.AdminResource;
 import com.maestroworkflow.module.MaestroEngineFactory;
 import com.maestroworkflow.module.MaestroModule;
 import com.maestroworkflow.module.TimerProcessorFactory;
+import com.maestroworkflow.store.MySqlMigrationsManager;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -14,6 +15,7 @@ import lombok.val;
 
 public class App extends Application<AppConfig> {
   public static void main(String[] args) throws Exception {
+    MySqlMigrationsManager.migrate();
     new App().run(args);
   }
 

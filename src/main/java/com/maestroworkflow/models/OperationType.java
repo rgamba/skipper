@@ -1,15 +1,20 @@
 package com.maestroworkflow.models;
 
+import com.google.gson.annotations.JsonAdapter;
 import com.maestroworkflow.ValidationUtils;
 import com.maestroworkflow.api.MaestroWorkflow;
 import com.maestroworkflow.api.WaitTimeout;
+import com.maestroworkflow.serde.ClassTypeAdapter;
 import java.io.Serializable;
 import lombok.NonNull;
 import lombok.Value;
 
 @Value
 public class OperationType implements Serializable {
-  @NonNull Class<?> clazz;
+  @JsonAdapter(ClassTypeAdapter.class)
+  @NonNull
+  Class<?> clazz;
+
   @NonNull String method;
   @NonNull ClazzType clazzType;
 

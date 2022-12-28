@@ -39,7 +39,9 @@ public class InMemoryWorkflowInstanceStore implements WorkflowInstanceStore {
 
   @Override
   public void update(
-      @NonNull String workflowInstanceId, @NonNull WorkflowInstance.Mutation mutation) {
+      @NonNull String workflowInstanceId,
+      @NonNull WorkflowInstance.Mutation mutation,
+      int version) {
     this.data =
         this.data.stream()
             .map(

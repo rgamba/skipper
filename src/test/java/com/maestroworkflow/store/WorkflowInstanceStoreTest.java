@@ -34,10 +34,12 @@ public class WorkflowInstanceStoreTest {
 
     store.update(
         w1.getId(),
-        WorkflowInstance.Mutation.builder().status(WorkflowInstance.Status.COMPLETED).build());
+        WorkflowInstance.Mutation.builder().status(WorkflowInstance.Status.COMPLETED).build(),
+        w1.getVersion());
     assertEquals(WorkflowInstance.Status.COMPLETED, store.get(w1.getId()).getStatus());
     val state = new HashMap<String, Anything>();
     state.put("foo", new Anything(String.class, "bar"));
-    store.update(w1.getId(), WorkflowInstance.Mutation.builder().state(state).build());
+    store.update(
+        w1.getId(), WorkflowInstance.Mutation.builder().state(state).build(), w1.getVersion());
   }
 }

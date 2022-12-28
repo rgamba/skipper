@@ -18,7 +18,7 @@ public class TimerProcessor {
 
   private final MaestroEngine engine;
   private final TimerStore timerStore;
-  private final Duration fetchDelay = Duration.ofMillis(500);
+  private final Duration fetchDelay = Duration.ofMillis(100);
   private final Map<Class<? extends TimerHandler>, TimerHandler> handlerMap;
 
   @Inject

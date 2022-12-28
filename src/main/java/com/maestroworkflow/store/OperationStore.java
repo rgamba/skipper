@@ -18,6 +18,4 @@ public interface OperationStore {
   List<OperationRequest> getOperationRequests(@NonNull String workflowInstanceId);
 
   void convertAllErrorResponsesToTransient(String workflowInstanceId);
-
-
 }

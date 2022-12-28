@@ -6,11 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.inject.*;
 import com.maestroworkflow.api.*;
-import com.maestroworkflow.api.annotations.StateField;
-import com.maestroworkflow.api.annotations.WorkflowMethod;
 import com.maestroworkflow.models.*;
-import com.maestroworkflow.module.MaestroEngineFactory;
-import com.maestroworkflow.module.MaestroModule;
 import com.maestroworkflow.store.*;
 import com.maestroworkflow.timers.DecisionTimerHandler;
 import com.maestroworkflow.timers.OperationRequestTimerHandler;
@@ -20,23 +16,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.val;
-import lombok.var;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
 public class MaestroEngineTest {
-  private static Logger logger = LoggerFactory.getLogger(MaestroEngineTest.class);
-
   @Mock private WorkflowInstanceStore workflowInstanceStore;
   @Mock private OperationStore operationStore;
   @Mock private TimerStore timerStore;
@@ -72,137 +61,6 @@ public class MaestroEngineTest {
             operationExecutor,
             injector);
     when(clock.instant()).thenReturn(Instant.MIN);
-  }
-
-  public static class TestWorkflow implements MaestroWorkflow {
-    @StateField String defaultName = "test";
-
-    public final GreeterOperation greeter = OperationProxyFactory.create(GreeterOperation.class);
-
-    @WorkflowMethod
-    @SneakyThrows
-    public String foo(String bar) {
-      String response = greeter.greet(bar);
-      this.defaultName = bar;
-      return response;
-    }
-  }
-
-  public static class GreeterOperation {
-    String greet(String name) {
-      return "Hello, " + name + "!";
-    }
-  }
-
-  @Singleton
-  public static class TestCallback implements CallbackHandler {
-    public int counter = 0;
-
-    @Override
-    public void handleUpdate(
-        @NonNull WorkflowInstance workflowInstance, @NonNull MaestroEngine engine) {
-      this.counter += 1;
-    }
-  }
-
-  @Test
-  public void testCreateWorkflow() throws InterruptedException {
-    WorkflowContext.set(new WorkflowContext("", Instant.now(), new ArrayList<>(), Instant.MIN));
-    Injector injector = Guice.createInjector(new MaestroModule());
-    val instanceStore = injector.getInstance(WorkflowInstanceStore.class);
-    val operationStore = injector.getInstance(OperationStore.class);
-    val timerStore = injector.getInstance(TimerStore.class);
-    val engineFactory = injector.getInstance(MaestroEngineFactory.class);
-    val engine = engineFactory.create(injector);
-    val request =
-        WorkflowCreationRequest.builder()
-            .workflowType(new WorkflowType(TestWorkflow.class))
-            .correlationId("test-123")
-            .arguments(
-                new ArrayList<Anything>() {
-                  {
-                    add(new Anything(String.class, "Ricardo"));
-                  }
-                })
-            .callbackHandlerClazz(TestCallback.class)
-            .build();
-
-    // 1. Create the workflow instance
-    val response = engine.createWorkflowInstance(request);
-    WorkflowContext.set(
-        new WorkflowContext(
-            response.getWorkflowInstance().getId(), Instant.now(), new ArrayList<>(), Instant.MIN));
-    assertEquals("test-123", response.getWorkflowInstance().getCorrelationId());
-    assertEquals(
-        response.getWorkflowInstance(), instanceStore.get(response.getWorkflowInstance().getId()));
-    Thread.sleep(500);
-    // Workflow creation should've queued a decision request in the timers datastore
-    var timers = timerStore.getExpiredTimers();
-    assertEquals(1, timers.size());
-
-    // The first decision should return an operation request
-    // Pop the element from the expired timers
-    timerStore.delete(timers.get(0));
-    // 2. Process the first decision request
-    engine.processDecision(response.getWorkflowInstance().getId());
-    // After processing the decision request, the first operation request should've been queued
-    // in the timers store.
-    Thread.sleep(500);
-    var instance = engine.getWorkflowInstance(response.getWorkflowInstance().getId());
-    assertEquals(WorkflowInstance.Status.ACTIVE, instance.getStatus());
-    assertNull(instance.getResult());
-    timers = timerStore.getExpiredTimers();
-    assertEquals(1, timers.size());
-    var timer = timerStore.get(timers.get(0).getTimerId());
-    assertEquals(timer.getHandlerClazz(), OperationRequestTimerHandler.class);
-
-    // 3. Pop the operation request from the timers store and execute it
-    timerStore.delete(timer);
-    val opRequestId = (String) timer.getPayload().getValue();
-    engine.processOperationRequest(opRequestId);
-    // Operation request should've scheduled a decision request
-    timers = timerStore.getExpiredTimers();
-    assertEquals(1, timers.size());
-    timer = timerStore.get(timers.get(0).getTimerId());
-    assertEquals(timer.getHandlerClazz(), DecisionTimerHandler.class);
-    assertEquals(
-        timer.getPayload(), new Anything(String.class, response.getWorkflowInstance().getId()));
-    timerStore.delete(timer);
-
-    // Check that the operation response has been persisted as a result of processing the
-    // operation request
-    val operationResponses =
-        operationStore.getOperationResponses(response.getWorkflowInstance().getId(), true);
-    assertEquals(1, operationResponses.size());
-    // Now that we have the operation response created, override the workflow context
-    WorkflowContext.set(
-        new WorkflowContext(
-            response.getWorkflowInstance().getId(),
-            Instant.now(),
-            operationResponses,
-            Instant.MIN));
-
-    // 4. Process the decision request now that the operation response has been persisted. This
-    // time around, the
-    // workflow should've run to completion so check the response.
-    engine.processDecision(response.getWorkflowInstance().getId());
-    Thread.sleep(500);
-    instance = engine.getWorkflowInstance(response.getWorkflowInstance().getId());
-    assertEquals(WorkflowInstance.Status.COMPLETED, instance.getStatus());
-    assertNotNull(instance.getResult());
-    assertEquals("Hello, Ricardo!", instance.getResult().getValue());
-
-    // 5. After processing the decision and as a result of the workflow being completed, a
-    // callback timer should've
-    // been created.
-    timers = timerStore.getExpiredTimers();
-    assertEquals(1, timers.size());
-    timer = timerStore.get(timers.get(0).getTimerId());
-    assertEquals(timer.getHandlerClazz(), WorkflowInstanceCallbackTimerHandler.class);
-    assertEquals(
-        timer.getPayload(), new Anything(String.class, response.getWorkflowInstance().getId()));
-    engine.processCallback(response.getWorkflowInstance().getId());
-    assertEquals(1, injector.getInstance(TestCallback.class).counter);
   }
 
   @Test
@@ -261,7 +119,7 @@ public class MaestroEngineTest {
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
     when(operationStore.createOperationRequest(any())).thenReturn(true);
-    doNothing().when(workflowInstanceStore).update(any(), any());
+    doNothing().when(workflowInstanceStore).update(any(), any(), anyInt());
     // when
     engine.processDecision(TEST_WORKFLOW_ID);
     // then
@@ -298,7 +156,7 @@ public class MaestroEngineTest {
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
     when(operationStore.createOperationRequest(any())).thenReturn(true);
-    doNothing().when(workflowInstanceStore).update(any(), any());
+    doNothing().when(workflowInstanceStore).update(any(), any(), anyInt());
     // when
     engine.processDecision(TEST_WORKFLOW_ID);
     // then
@@ -310,7 +168,7 @@ public class MaestroEngineTest {
     ArgumentCaptor<WorkflowInstance.Mutation> mutationArgumentCaptor =
         ArgumentCaptor.forClass(WorkflowInstance.Mutation.class);
     verify(workflowInstanceStore, times(1))
-        .update(eq(TEST_WORKFLOW_ID), mutationArgumentCaptor.capture());
+        .update(eq(TEST_WORKFLOW_ID), mutationArgumentCaptor.capture(), anyInt());
     assertEquals(newStatus, mutationArgumentCaptor.getValue().getState());
     assertEquals(WorkflowInstance.Status.COMPLETED, mutationArgumentCaptor.getValue().getStatus());
     assertEquals("completed!", mutationArgumentCaptor.getValue().getResult().getValue());
@@ -332,7 +190,7 @@ public class MaestroEngineTest {
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
     when(operationStore.createOperationRequest(any())).thenReturn(true);
-    doNothing().when(workflowInstanceStore).update(any(), any());
+    doNothing().when(workflowInstanceStore).update(any(), any(), anyInt());
     // when
     engine.processDecision(TEST_WORKFLOW_ID);
     // then
@@ -657,7 +515,8 @@ public class MaestroEngineTest {
     // then
     ArgumentCaptor<WorkflowInstance.Mutation> argumentCaptor =
         ArgumentCaptor.forClass(WorkflowInstance.Mutation.class);
-    verify(workflowInstanceStore, times(1)).update(eq(TEST_WORKFLOW_ID), argumentCaptor.capture());
+    verify(workflowInstanceStore, times(1))
+        .update(eq(TEST_WORKFLOW_ID), argumentCaptor.capture(), anyInt());
     assertEquals(newState, argumentCaptor.getValue().getState());
     ArgumentCaptor<Timer> timerCaptor = ArgumentCaptor.forClass(Timer.class);
     verify(timerStore, times(1)).createOrUpdate(timerCaptor.capture());
