@@ -3,16 +3,16 @@ package demo.workflows;
 import demo.operations.Operations;
 import java.time.Duration;
 import lombok.NonNull;
-import maestro.OperationProxyFactory;
-import maestro.api.MaestroWorkflow;
-import maestro.api.OperationConfig;
-import maestro.api.WaitTimeout;
-import maestro.api.annotations.SignalConsumer;
-import maestro.api.annotations.StateField;
-import maestro.api.annotations.WorkflowMethod;
-import maestro.models.FixedRetryStrategy;
+import skipper.OperationProxyFactory;
+import skipper.api.OperationConfig;
+import skipper.api.SkipperWorkflow;
+import skipper.api.WaitTimeout;
+import skipper.api.annotations.SignalConsumer;
+import skipper.api.annotations.StateField;
+import skipper.api.annotations.WorkflowMethod;
+import skipper.models.FixedRetryStrategy;
 
-public class ApprovalWorkflow implements MaestroWorkflow {
+public class ApprovalWorkflow implements SkipperWorkflow {
   private final Operations operations =
       OperationProxyFactory.create(
           Operations.class,
@@ -26,7 +26,7 @@ public class ApprovalWorkflow implements MaestroWorkflow {
   @StateField public Boolean isApproved = null;
 
   @WorkflowMethod
-  public boolean getApproval(@NonNull String user, @NonNull Integer amount) {
+  public boolean getApproval(@NonNull String user, int amount) {
     operations.notifyApprovalRequest(user, amount);
     try {
       waitUntil(() -> isApproved != null, Duration.ofMinutes(1));
@@ -37,7 +37,7 @@ public class ApprovalWorkflow implements MaestroWorkflow {
   }
 
   @SignalConsumer
-  public void approveTransfer(@NonNull Boolean approved) {
+  public void approveTransfer(boolean approved) {
     isApproved = approved;
   }
 }

@@ -1,6 +1,7 @@
 package demo.resources;
 
 import demo.services.Ledger;
+import demo.workflowHandlers.TransferCallbackHandler;
 import demo.workflows.TransferWorkflow;
 import java.util.Map;
 import java.util.UUID;
@@ -8,16 +9,16 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import lombok.NonNull;
 import lombok.val;
-import maestro.client.MaestroClient;
-import maestro.models.WorkflowInstance;
+import skipper.client.SkipperClient;
+import skipper.models.WorkflowInstance;
 
 @Path("/transfers")
 @Produces(MediaType.APPLICATION_JSON)
 public class AppResource {
-  private final MaestroClient client;
+  private final SkipperClient client;
   private final Ledger ledger;
 
-  public AppResource(@NonNull MaestroClient engine, @NonNull Ledger ledger) {
+  public AppResource(@NonNull SkipperClient engine, @NonNull Ledger ledger) {
     this.client = engine;
     this.ledger = ledger;
   }
@@ -42,7 +43,12 @@ public class AppResource {
       @NonNull @QueryParam("to") String receiver) {
     val response =
         client.createWorkflowInstance(
-            TransferWorkflow.class, UUID.randomUUID().toString(), sender, receiver, amount);
+            TransferWorkflow.class,
+            UUID.randomUUID().toString(),
+            TransferCallbackHandler.class,
+            sender,
+            receiver,
+            amount);
     return response.getWorkflowInstance();
   }
 

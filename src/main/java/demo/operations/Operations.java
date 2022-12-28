@@ -1,15 +1,18 @@
 package demo.operations;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import demo.services.Ledger;
 import demo.services.LedgerError;
 import lombok.NonNull;
 import lombok.val;
 
+@Singleton
 public class Operations {
 
   private final Ledger ledger;
 
+  // TODO: Default constructor needed for proxy creation, figure a way around this.
   public Operations() {
     ledger = null;
   }
@@ -19,8 +22,7 @@ public class Operations {
     this.ledger = ledger;
   }
 
-  public String withdraw(String accountId, Integer amount, String idempotencyToken)
-      throws LedgerError {
+  public String withdraw(String accountId, int amount, String idempotencyToken) throws LedgerError {
     return ledger.withdraw(accountId, amount, "transfer sent", idempotencyToken);
   }
 
@@ -31,7 +33,7 @@ public class Operations {
     return true;
   }
 
-  public String deposit(String account, Integer amount, String idempotencyKey) throws LedgerError {
+  public String deposit(String account, int amount, String idempotencyKey) throws LedgerError {
     return ledger.deposit(account, amount, "transfer received", idempotencyKey);
   }
 

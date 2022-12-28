@@ -3,19 +3,16 @@ package demo.workflows;
 import demo.operations.Operations;
 import demo.services.LedgerError;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.val;
-import maestro.OperationProxyFactory;
-import maestro.api.*;
-import maestro.api.annotations.StateField;
-import maestro.api.annotations.WorkflowMethod;
-import maestro.models.FixedRetryStrategy;
+import skipper.OperationProxyFactory;
+import skipper.api.*;
+import skipper.api.annotations.StateField;
+import skipper.api.annotations.WorkflowMethod;
+import skipper.models.FixedRetryStrategy;
 
-public class TransferWorkflow implements MaestroWorkflow {
+public class TransferWorkflow implements SkipperWorkflow {
   public static String SYSTEM_ACCOUNT = "system";
   public static Integer AMOUNT_APPROVAL_THRESHOLD = 100;
 
@@ -33,14 +30,13 @@ public class TransferWorkflow implements MaestroWorkflow {
       OperationProxyFactory.create(
           ApprovalWorkflow.class, OperationConfig.builder().timeout(Duration.ofMinutes(1)).build());
 
-  @StateField public Boolean approvalRequired = false;
+  @StateField Boolean approvalRequired = false;
 
   @WorkflowMethod
-  public TransferResult transfer(
-      @NonNull String from, @NonNull String to, @NonNull Integer amount) {
+  public TransferResult transfer(@NonNull String from, @NonNull String to, int amount) {
     validateAmount(amount);
     int transferFee = transferFee(amount);
-    List<Callable<Object>> compensation = new ArrayList<>();
+    Saga saga = new Saga();
 
     try {
       if (amount >= AMOUNT_APPROVAL_THRESHOLD) {
@@ -50,25 +46,25 @@ public class TransferWorkflow implements MaestroWorkflow {
         }
       }
       val debitAuthCode = operations.withdraw(from, amount + transferFee, genIdempotencyToken());
-      compensation.add(() -> operations.rollbackWithdraw(debitAuthCode, genIdempotencyToken()));
+      saga.addCompensation(operations::rollbackWithdraw, debitAuthCode, genIdempotencyToken());
       val creditAuthCode = operations.deposit(to, amount, genIdempotencyToken());
-      compensation.add(() -> operations.rollbackDeposit(creditAuthCode, genIdempotencyToken()));
+      saga.addCompensation(operations::rollbackDeposit, creditAuthCode, genIdempotencyToken());
       val systemCreditAuthCode =
           operations.deposit(SYSTEM_ACCOUNT, transferFee, genIdempotencyToken());
-      compensation.add(
-          () -> operations.rollbackDeposit(systemCreditAuthCode, genIdempotencyToken()));
+      saga.addCompensation(
+          operations::rollbackDeposit, systemCreditAuthCode, genIdempotencyToken());
       return new TransferResult(true, "transfer completed successfully");
     } catch (LedgerError | OperationError e) {
       // Attempt compensating actions. No error handling here, in case any of the compensations
       // fail, we need manual intervention.
-      joinAll(compensation);
+      saga.compensate();
       return new TransferResult(
           false,
           String.format("unexpected error when trying to complete transfer: %s", e.getMessage()));
     }
   }
 
-  private void validateAmount(Integer amount) {
+  private void validateAmount(int amount) {
     if (amount <= 0) {
       throw new IllegalArgumentException("amount must be greater than zero");
     }

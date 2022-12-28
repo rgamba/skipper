@@ -4,7 +4,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Utils {
   public static void randomFail() {
-    if (ThreadLocalRandom.current().nextInt(10) <= 3) {
+    if (ThreadLocalRandom.current().nextInt(10) >= 8) {
       throw new RuntimeException("something went wrong!");
     }
   }
