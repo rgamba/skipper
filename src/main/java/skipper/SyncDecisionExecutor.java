@@ -18,6 +18,15 @@ import skipper.common.Anything;
 import skipper.models.OperationRequest;
 import skipper.models.OperationResponse;
 
+/**
+ * This is a variation of the {@link DecisionExecutor} that will attempt to execute all operations
+ * in-memory without having to incur in the additional overhead and I/O of writing/reading to/from
+ * the timer store. This strategy is an optimization that will be significantly faster in the best
+ * of cases, but will be the same as the {@link DecisionExecutor} in the worst of cases.
+ *
+ * <p>This strategy does not give away any of the guarantees that the {@link DecisionExecutor} does,
+ * but it does increase the chances of operations being executed more than once in very rare cases.
+ */
 public class SyncDecisionExecutor extends DecisionExecutor {
   @NonNull private final OperationExecutor operationExecutor;
   @NonNull private final Clock clock;

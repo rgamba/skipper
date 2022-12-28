@@ -16,6 +16,7 @@ import lombok.var;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +134,8 @@ public class SkipperEngineTest {
         .rollback(); // rollback "global" test transaction
   }
 
+  @Ignore(
+      "This is only relevant when using DecisionExecutor but will fail with SyncDecisionExecutor")
   @Test
   public void testCreateWorkflow() throws InterruptedException {
     val correlationId = UUID.randomUUID().toString();
@@ -220,6 +223,61 @@ public class SkipperEngineTest {
     timers = timerStore.getExpiredTimers();
     assertEquals(1, timers.size());
     timer = timerStore.get(timers.get(0).getTimerId());
+    assertEquals(timer.getHandlerClazz(), WorkflowInstanceCallbackTimerHandler.class);
+    assertEquals(
+        timer.getPayload(), new Anything(String.class, response.getWorkflowInstance().getId()));
+    engine.processCallback(response.getWorkflowInstance().getId());
+    assertEquals(1, registry.getCallbackHandler(TestCallback.class).counter);
+  }
+
+  @Test
+  public void testCreateWorkflowSyncDecisionExecutor() throws InterruptedException {
+    val correlationId = UUID.randomUUID().toString();
+    val request =
+        WorkflowCreationRequest.builder()
+            .workflowType(new WorkflowType(TestWorkflow.class))
+            .correlationId(correlationId)
+            .arguments(
+                new ArrayList<Anything>() {
+                  {
+                    add(new Anything(String.class, "Ricardo"));
+                  }
+                })
+            .callbackHandlerClazz(TestCallback.class)
+            .build();
+
+    // 1. Create the workflow instance
+    val response = engine.createWorkflowInstance(request);
+    DecisionThread.setWorkflowContext(
+        new WorkflowContext(
+            response.getWorkflowInstance().getId(), Instant.now(), new ArrayList<>(), Instant.MIN));
+    assertEquals(correlationId, response.getWorkflowInstance().getCorrelationId());
+    assertEquals(
+        response.getWorkflowInstance(), instanceStore.get(response.getWorkflowInstance().getId()));
+    Thread.sleep(500);
+    // Workflow creation should've queued a decision request in the timers datastore
+    var timers = timerStore.getExpiredTimers();
+    assertEquals(1, timers.size());
+
+    // The first decision should return an operation request
+    // Pop the element from the expired timers
+    timerStore.delete(timers.get(0));
+    // 2. Process the first decision request
+    engine.processDecision(response.getWorkflowInstance().getId());
+    // After processing the decision request, the sync decision executor should've run all
+    // operations synchronously
+    // and completed the workflow.
+    Thread.sleep(500);
+    var instance = engine.getWorkflowInstance(response.getWorkflowInstance().getId());
+    assertEquals(WorkflowInstance.Status.COMPLETED, instance.getStatus());
+    assertNotNull(instance.getResult());
+    assertEquals("Hello, Ricardo!", instance.getResult().getValue());
+
+    // 5. After processing the decision and as a result of the workflow being completed, a
+    // callback timer should've been created.
+    timers = timerStore.getExpiredTimers();
+    assertEquals(1, timers.size());
+    var timer = timerStore.get(timers.get(0).getTimerId());
     assertEquals(timer.getHandlerClazz(), WorkflowInstanceCallbackTimerHandler.class);
     assertEquals(
         timer.getPayload(), new Anything(String.class, response.getWorkflowInstance().getId()));

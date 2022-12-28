@@ -31,3 +31,6 @@ Any class with methods can be considered a skipper operation. Skipper does not p
 adhere to any framework or API. The only requirement (hard requirement) is that any method that is to be used as
 a skipper operation **must be idempotent**.
 
+## Next steps
+
+[How to install skipper](getting_started/installation.md)

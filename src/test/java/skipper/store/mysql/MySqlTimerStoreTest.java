@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import skipper.common.Anything;
 import skipper.models.Timer;
+import skipper.store.DateTimeUtil;
 import skipper.store.SqlTestHelper;
 import skipper.timers.TimerHandler;
 
@@ -33,7 +34,7 @@ public class MySqlTimerStoreTest extends SqlTestHelper {
     val timer =
         Timer.builder()
             .timerId("timer123")
-            .timeout(Instant.now())
+            .timeout(DateTimeUtil.truncateInstant(Instant.now()))
             .retries(0)
             .version(0)
             .handlerClazz(TimerHandler.class)

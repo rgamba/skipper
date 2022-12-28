@@ -27,6 +27,6 @@ by just focusing on the business logic.
 
 ## Next steps
 
-Ready to learn more? [Read the overview](/docs/overview.md) to learn more about skipper's concepts.
+Ready to learn more? [Read the overview](getting_started/overview.md) to learn more about skipper's concepts.
 
-or ready to get started? [Jump to the installation guide](/docs/installation.md)!
+or ready to get started? [Jump to the installation guide](getting_started/installation.md)!
