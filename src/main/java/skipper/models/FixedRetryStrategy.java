@@ -2,12 +2,14 @@ package skipper.models;
 
 import java.time.Duration;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
+@AllArgsConstructor
 public class FixedRetryStrategy implements RetryStrategy {
   @NonNull public Duration retryDelay;
   @NonNull public int maxRetries;

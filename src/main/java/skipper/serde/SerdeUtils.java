@@ -2,6 +2,7 @@ package skipper.serde;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.time.Duration;
 import lombok.Getter;
 import skipper.common.Anything;
 import skipper.models.FixedRetryStrategy;
@@ -18,6 +19,7 @@ public class SerdeUtils {
           .registerTypeAdapter(NoRetry.class, new RetryStrategyAdapter())
           .registerTypeAdapter(FixedRetryStrategy.class, new RetryStrategyAdapter())
           .registerTypeAdapter(RetryStrategy.class, new RetryStrategyAdapter())
+          .registerTypeAdapter(Duration.class, new DurationAdapter())
           .create();
 
   private SerdeUtils() {}
