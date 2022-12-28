@@ -12,6 +12,5 @@ public interface OperationStore {
     boolean createOperationResponse(@NonNull OperationResponse operationResponse);
     List<OperationResponse> getOperationResponses(@NonNull String workflowInstanceId, boolean includeTransientResponses);
     OperationRequest getOperationRequest(@NonNull String operationRequestId);
-
     void convertAllErrorResponsesToTransient(String workflowInstanceId);
 }

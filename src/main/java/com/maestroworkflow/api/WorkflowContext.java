@@ -47,4 +47,8 @@ public class WorkflowContext {
     public static void setLatestCurrentExecutionCheckpoint(@NonNull Instant checkpoint) {
         latestCurrentExecutionCheckpoint.set(checkpoint);
     }
+
+    public static void removeLatestCurrentExecutionCheckpoint() {
+        latestCurrentExecutionCheckpoint.remove();
+    }
 }

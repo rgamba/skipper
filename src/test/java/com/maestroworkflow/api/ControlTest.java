@@ -2,6 +2,7 @@ package com.maestroworkflow.api;
 
 import com.maestroworkflow.models.*;
 import lombok.val;
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
+@NotThreadSafe
 public class ControlTest {
 
     private static final String TEST_WORKFLOW_ID = "test-123";
@@ -37,6 +39,7 @@ public class ControlTest {
                 .operationResponses(new ArrayList<>())
                 .build();
         WorkflowContext.set(context);
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
         try {
             Control.waitUntil(() -> false, Duration.ofSeconds(1));
             throw new RuntimeException("expected a stop workflow execution exception");
@@ -54,6 +57,7 @@ public class ControlTest {
                 .operationResponses(new ArrayList<>())
                 .build();
         WorkflowContext.set(context);
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
         try {
             Control.waitUntil(() -> false, Duration.ofSeconds(1));
             throw new RuntimeException("expected a stop workflow execution exception");
@@ -105,11 +109,12 @@ public class ControlTest {
                             .creationTime(t1)
                             .isSuccess(false)
                             .error(new Anything("error"))
-                            .operationType(new OperationType(WaitTimeout.class, "0"))
+                            .operationType(OperationType.waitTimeout("0"))
                             .build());
                 }})
                 .build();
         WorkflowContext.set(context);
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
         try {
             Control.waitUntil(() -> true, Duration.ofSeconds(1));
             throw new RuntimeException("expected wait timeout exception");

@@ -98,7 +98,7 @@ public class MaestroEngine {
         val decisionRequest = DecisionRequest.builder()
                 .workflowInstance(workflowInstance).operationResponses(operationResponses).build();
 
-        WorkflowContext.set(new WorkflowContext(workflowInstanceId, clock.instant(), operationResponses, workflowInstance.getCreationTime()));
+        resetWorkflowContextData(workflowInstance, operationResponses);
 
         val decisionResponse = decisionExecutor.execute(decisionRequest, this.injector);
         decisionResponse.getOperationRequests().forEach(req -> {
@@ -128,6 +128,11 @@ public class MaestroEngine {
         }
     }
 
+    private void resetWorkflowContextData(WorkflowInstance workflowInstance, List<OperationResponse> operationResponses) {
+        WorkflowContext.set(new WorkflowContext(workflowInstance.getId(), clock.instant(), operationResponses, workflowInstance.getCreationTime()));
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
+    }
+
     private void scheduleCallback(WorkflowInstance workflowInstance) {
         val timer = Timer.builder().timerId(String.format("%s-callback-%d", workflowInstance.getId(), workflowInstance.getVersion()))
                 .handlerClazz(WorkflowInstanceCallbackTimerHandler.class)
@@ -139,8 +144,8 @@ public class MaestroEngine {
     public void processOperationRequest(@NonNull String operationRequestId) {
         val operationRequest = operationStore.getOperationRequest(operationRequestId);
         val workflowInstance = workflowInstanceStore.get(operationRequest.getWorkflowInstanceId());
-        WorkflowContext.set(new WorkflowContext(operationRequest.getWorkflowInstanceId(), clock.instant(),
-                new ArrayList<>(), workflowInstance.getCreationTime()));
+
+        resetWorkflowContextData(workflowInstance, new ArrayList<>());
 
         if (operationRequest.getOperationType().isWorkflow()) {
             createChildWorkflow(operationRequest);
@@ -231,7 +236,9 @@ public class MaestroEngine {
     public void executeSignalConsumer(@NonNull String workflowInstanceId, @NonNull String signalMethodName,
                                       @NonNull List<Anything> signalArgs) {
         val workflowInstance = workflowInstanceStore.get(workflowInstanceId);
-        WorkflowContext.set(new WorkflowContext(workflowInstanceId, clock.instant(), new ArrayList<>(), workflowInstance.getCreationTime()));
+
+        resetWorkflowContextData(workflowInstance, new ArrayList<>());
+
         val newState = decisionExecutor.executeSignalConsumer(workflowInstance, injector, signalMethodName, signalArgs);
         workflowInstanceStore.update(workflowInstanceId, WorkflowInstance.Mutation.builder().state(newState).build());
         scheduleDecision(workflowInstanceId);

@@ -1,5 +1,6 @@
 package com.maestroworkflow.api;
 
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 
+@NotThreadSafe
 public class TimeoutTest {
     private final Instant t1 = Instant.MIN;
     private final Instant t2 = t1.plus(1, ChronoUnit.SECONDS);
@@ -18,6 +20,7 @@ public class TimeoutTest {
     public void testTimeoutWhenTimeoutHasNotExpired() throws Exception {
         WorkflowContext context = new WorkflowContext("1", t1, new ArrayList<>(), t1);
         WorkflowContext.set(context);
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
 
         Timeout timeout = Timeout.of(Duration.ofSeconds(1));
         try {
@@ -32,6 +35,7 @@ public class TimeoutTest {
     public void testTimeoutWhenTimeoutHasExpired() throws Exception {
         WorkflowContext context = new WorkflowContext("1", t2, new ArrayList<>(), t1);
         WorkflowContext.set(context);
+        WorkflowContext.removeLatestCurrentExecutionCheckpoint();
 
         Timeout timeout = Timeout.of(Duration.ofSeconds(1));
         timeout.call();

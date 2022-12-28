@@ -1,9 +1,6 @@
 package com.maestroworkflow.store;
 
-import com.maestroworkflow.models.FixedRetryStrategy;
-import com.maestroworkflow.models.OperationRequest;
-import com.maestroworkflow.models.OperationResponse;
-import com.maestroworkflow.models.OperationType;
+import com.maestroworkflow.models.*;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -47,10 +44,12 @@ public class InMemoryOperationStoreTest {
                 .operationType(operationType)
                 .creationTime(Instant.now())
                 .isSuccess(false)
+                .isTransient(true)
+                .error(Anything.of("test"))
                 .operationRequestId("op1")
                 .build();
         OperationResponse res2 = res1.toBuilder().workflowInstanceId(wfId2).operationRequestId("res2").build();
-        OperationResponse res1Success = res1.toBuilder().isSuccess(true).id("res3").build();
+        OperationResponse res1Success = res1.toBuilder().isSuccess(true).isTransient(false).id("res3").build();
 
         assertTrue(store.createOperationResponse(res1));
         assertTrue(store.createOperationResponse(res2));

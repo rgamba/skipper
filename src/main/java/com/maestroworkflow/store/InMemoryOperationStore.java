@@ -30,13 +30,10 @@ public class InMemoryOperationStore implements OperationStore {
         reqsLock.lock();
         try {
             // Operation requests don't need to be unique as long as the timer elements preserve the uniqueness
-//            if (this.requests.stream().anyMatch(req ->
-//                    req.getWorkflowInstanceId().equals(operationRequest.getWorkflowInstanceId())
-//                            && req.getOperationType().equals(operationRequest.getOperationType())
-//                            && req.getIteration() == operationRequest.getIteration()
-//                            && req.getFailedAttempts() == operationRequest.getFailedAttempts())) {
-//                return false;
-//            }
+            if (this.requests.stream().anyMatch(req ->
+                    req.getOperationRequestId().equals(operationRequest.getOperationRequestId()))) {
+                return false;
+            }
             this.requests.add(operationRequest);
             return true;
         } finally {

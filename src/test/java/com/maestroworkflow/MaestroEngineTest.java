@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.val;
 import lombok.var;
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,6 +35,7 @@ import static junit.framework.TestCase.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@NotThreadSafe
 public class MaestroEngineTest {
     private static Logger logger = LoggerFactory.getLogger(MaestroEngineTest.class);
 

@@ -7,6 +7,7 @@ import com.maestroworkflow.models.WorkflowType;
 import lombok.val;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -25,6 +26,7 @@ public class WorkflowInstanceStoreTest {
                 .correlationId("corr1")
                 .version(1)
                 .initialArgs(new ArrayList<>())
+                .creationTime(Instant.MIN)
                 .build();
          store.create(w1);
          assertEquals(w1, store.get(w1.getId()));
