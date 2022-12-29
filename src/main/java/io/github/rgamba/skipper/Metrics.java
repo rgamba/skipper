@@ -6,12 +6,12 @@ import com.codahale.metrics.*;
 import java.util.concurrent.Callable;
 
 public class Metrics {
-  public static MetricRegistry registry = new MetricRegistry();
+  public static final MetricRegistry registry = new MetricRegistry();
 
-  public static Meter WORKFLOW_INSTANCE_CREATION_COUNT =
+  public static final Meter WORKFLOW_INSTANCE_CREATION_COUNT =
       registry.meter(name("workflow", "creation", "count"));
 
-  public static Timer TIMERS_DISPATCH_LATENCY_TIMER =
+  public static final Timer TIMERS_DISPATCH_LATENCY_TIMER =
       registry.timer(name("timers", "dispatch", "latency"));
 
   public static Timer getDecisionLatencyTimer(Class<?> className) {

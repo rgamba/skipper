@@ -10,7 +10,6 @@ import io.github.rgamba.skipper.common.Anything;
 import io.github.rgamba.skipper.models.OperationRequest;
 import io.github.rgamba.skipper.models.OperationResponse;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,7 +40,7 @@ public class SyncDecisionExecutor extends DecisionExecutor {
   @Override
   public DecisionResponse execute(
       @NonNull DecisionRequest decisionRequest, @NonNull DependencyRegistry registry) {
-    List<OperationRequest> operationRequests = new ArrayList<>();
+    List<OperationRequest> operationRequests;
     // We'll keep track in memory of all operation responses we've received so far so that we can
     // return them as part of the decision response.
     List<OperationResponse> operationResponses = decisionRequest.getOperationResponses();

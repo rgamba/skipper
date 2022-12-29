@@ -26,7 +26,7 @@ public class OperationExecutor {
 
   public static RetryStrategy DEFAULT_RETRY_STRATEGY =
       FixedRetryStrategy.builder().retryDelay(Duration.ofSeconds(5)).maxRetries(5).build();
-  public static OperationConfig DEFAULT_OPERATION_CONFIG =
+  public static final OperationConfig DEFAULT_OPERATION_CONFIG =
       OperationConfig.builder().retryStrategy(DEFAULT_RETRY_STRATEGY).build();
 
   public OperationExecutionResponse execute(

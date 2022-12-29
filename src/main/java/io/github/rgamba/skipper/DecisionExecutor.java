@@ -42,7 +42,7 @@ public class DecisionExecutor {
       builder.newStatus(WorkflowInstance.Status.ERROR);
       String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
       reason += Arrays.toString(e.getStackTrace());
-      builder.statusReason(reason == null ? "No error message" : reason);
+      builder.statusReason(reason);
     }
     return builder.operationResponses(new ArrayList<>()).build();
   }
@@ -54,7 +54,6 @@ public class DecisionExecutor {
     val decider = registry.getWorkflow(clazz);
     val inspector = new WorkflowInspector(clazz, decider);
     inspector.setState(decisionRequest.getWorkflowInstance().getState());
-    val initialState = inspector.getState();
     val workflowMethod = inspector.getWorkflowMethod();
     val params =
         inspector.getWorkflowMethodParams(decisionRequest.getWorkflowInstance().getInitialArgs());

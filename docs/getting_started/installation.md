@@ -6,9 +6,9 @@ Skipper is provided as a Maven package.
 
 ```xml
 <dependency>
-  <groupId>org.skipper</groupId>
-  <artifactId>skipper</artifactId>
-  <version>0.0.1</version>
+  <groupId>io.github.rgamba</groupId>
+  <artifactId>skipper-core</artifactId>
+  <version>1.1.1</version>
 </dependency>
 ```
 

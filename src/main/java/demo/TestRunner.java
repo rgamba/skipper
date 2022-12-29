@@ -80,7 +80,7 @@ public class TestRunner {
     System.out.println("Starting tests...");
     runTests(engine);
 
-    Instant timeout = Instant.now().plus(Duration.ofSeconds(10));
+    Instant timeout = Instant.now().plus(Duration.ofSeconds(30));
     while (workflowsCompleted.incrementAndGet() < workflowsCreated.get()
         && Instant.now().isBefore(timeout)) {
       Thread.sleep(500);
