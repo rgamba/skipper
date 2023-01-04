@@ -273,6 +273,10 @@ public class SkipperEngineTest {
     assertNotNull(instance.getResult());
     assertEquals("Hello, Ricardo!", instance.getResult().getValue());
 
+    // Verify that the workflow requests have been created
+    val opRequests = operationStore.getOperationRequests(instance.getId());
+    assertEquals(1, opRequests.size());
+
     // 5. After processing the decision and as a result of the workflow being completed, a
     // callback timer should've been created.
     timers = timerStore.getExpiredTimers();

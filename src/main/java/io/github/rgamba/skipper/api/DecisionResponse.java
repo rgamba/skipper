@@ -22,7 +22,7 @@ public class DecisionResponse {
   String statusReason;
   Duration waitForDuration;
 
-  @NonNull List<OperationResponse> operationResponses;
+  @NonNull List<InlineExecution> inlineExecutions;
 
   public DecisionResponse(
       Anything result,
@@ -31,7 +31,7 @@ public class DecisionResponse {
       @NonNull WorkflowInstance.Status newStatus,
       String statusReason,
       Duration waitForDuration,
-      @NonNull List<OperationResponse> operationResponses) {
+      @NonNull List<InlineExecution> inlineExecutions) {
     ValidationUtils.when(
             newStatus.equals(WorkflowInstance.Status.COMPLETED)
                 || newStatus.equals(WorkflowInstance.Status.ERROR))
@@ -57,6 +57,12 @@ public class DecisionResponse {
     this.newStatus = newStatus;
     this.statusReason = statusReason;
     this.waitForDuration = waitForDuration;
-    this.operationResponses = operationResponses;
+    this.inlineExecutions = inlineExecutions;
+  }
+
+  @Value
+  public static class InlineExecution {
+    @NonNull OperationRequest request;
+    @NonNull OperationResponse response;
   }
 }

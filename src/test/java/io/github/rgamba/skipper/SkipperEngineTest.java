@@ -118,7 +118,7 @@ public class SkipperEngineTest {
                   }
                 })
             .newStatus(WorkflowInstance.Status.ACTIVE)
-            .operationResponses(new ArrayList<>())
+            .inlineExecutions(new ArrayList<>())
             .build();
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
@@ -157,7 +157,7 @@ public class SkipperEngineTest {
             .newStatus(WorkflowInstance.Status.COMPLETED)
             .newState(newStatus)
             .result(new Anything("completed!"))
-            .operationResponses(new ArrayList<>())
+            .inlineExecutions(new ArrayList<>())
             .build();
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);
@@ -192,7 +192,7 @@ public class SkipperEngineTest {
             .newStatus(WorkflowInstance.Status.ACTIVE)
             .newState(new HashMap<>())
             .waitForDuration(Duration.ofSeconds(10))
-            .operationResponses(new ArrayList<>())
+            .inlineExecutions(new ArrayList<>())
             .build();
     when(decisionExecutor.execute(any(), any())).thenReturn(decisionResponse);
     when(timerStore.createOrUpdate(any())).thenReturn(null);

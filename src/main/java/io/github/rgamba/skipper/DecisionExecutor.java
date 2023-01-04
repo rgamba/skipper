@@ -44,7 +44,7 @@ public class DecisionExecutor {
       reason += Arrays.toString(e.getStackTrace());
       builder.statusReason(reason);
     }
-    return builder.operationResponses(new ArrayList<>()).build();
+    return builder.inlineExecutions(new ArrayList<>()).build();
   }
 
   @SneakyThrows

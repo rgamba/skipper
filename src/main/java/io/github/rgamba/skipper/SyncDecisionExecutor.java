@@ -10,6 +10,7 @@ import io.github.rgamba.skipper.common.Anything;
 import io.github.rgamba.skipper.models.OperationRequest;
 import io.github.rgamba.skipper.models.OperationResponse;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ public class SyncDecisionExecutor extends DecisionExecutor {
     // We'll keep track in memory of all operation responses we've received so far so that we can
     // return them as part of the decision response.
     List<OperationResponse> operationResponses = decisionRequest.getOperationResponses();
+    List<DecisionResponse.InlineExecution> inlineExecutions = new ArrayList<>();
     val decisionResponseBuilder = DecisionResponse.builder();
     do {
       DecisionResponse response = super.execute(decisionRequest, registry);
@@ -60,23 +62,24 @@ public class SyncDecisionExecutor extends DecisionExecutor {
         decisionResponseBuilder.waitForDuration(response.getWaitForDuration());
         break;
       }
-      for (val opResponse : executeOperations(operationRequests, registry)) {
-        if (opResponse.isTransient()) {
+      for (val inlineExecution : executeOperations(operationRequests, registry)) {
+        if (inlineExecution.getResponse().isTransient()) {
           // Non-transient operation results cannot be processed synchronously,
           // so we need to break in order to retry async.
           break;
         }
-        operationResponses.add(opResponse);
+        operationResponses.add(inlineExecution.getResponse());
+        inlineExecutions.add(inlineExecution);
       }
       ;
     } while (!operationRequests.isEmpty());
     return decisionResponseBuilder
         .operationRequests(operationRequests)
-        .operationResponses(operationResponses)
+        .inlineExecutions(inlineExecutions)
         .build();
   }
 
-  private List<OperationResponse> executeOperations(
+  private List<DecisionResponse.InlineExecution> executeOperations(
       @NonNull List<OperationRequest> operationRequests, @NonNull DependencyRegistry registry) {
     return operationRequests.stream()
         .map(
@@ -98,19 +101,21 @@ public class SyncDecisionExecutor extends DecisionExecutor {
                           new OperationError((Throwable) responseError.getValue()));
                 }
               }
-              return OperationResponse.builder()
-                  .operationRequestId(req.getOperationRequestId())
-                  .result(response.getResult())
-                  .isSuccess(!response.isError())
-                  .operationType(req.getOperationType())
-                  .iteration(req.getIteration())
-                  .id(UUID.randomUUID().toString())
-                  .workflowInstanceId(req.getWorkflowInstanceId())
-                  .creationTime(clock.instant())
-                  .isTransient(isTransient)
-                  .error(responseError)
-                  .executionDuration(response.getExecutionDuration())
-                  .build();
+              val operationResponse =
+                  OperationResponse.builder()
+                      .operationRequestId(req.getOperationRequestId())
+                      .result(response.getResult())
+                      .isSuccess(!response.isError())
+                      .operationType(req.getOperationType())
+                      .iteration(req.getIteration())
+                      .id(UUID.randomUUID().toString())
+                      .workflowInstanceId(req.getWorkflowInstanceId())
+                      .creationTime(clock.instant())
+                      .isTransient(isTransient)
+                      .error(responseError)
+                      .executionDuration(response.getExecutionDuration())
+                      .build();
+              return new DecisionResponse.InlineExecution(req, operationResponse);
             })
         .collect(Collectors.toList());
   }

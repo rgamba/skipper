@@ -179,8 +179,15 @@ public class SkipperEngine {
               .build();
       workflowInstanceStore.update(workflowInstanceId, mutation, workflowInstance.getVersion());
     }
-    if (!decisionResponse.getOperationResponses().isEmpty()) {
-      decisionResponse.getOperationResponses().forEach(operationStore::createOperationResponse);
+    if (!decisionResponse.getInlineExecutions().isEmpty()) {
+      decisionResponse
+          .getInlineExecutions()
+          .forEach(
+              exe -> {
+                // TODO: optimize this by bulking all inserts into a single atomic transaction
+                operationStore.createOperationRequest(exe.getRequest());
+                operationStore.createOperationResponse(exe.getResponse());
+              });
     }
 
     if (decisionResponse.getNewStatus().isCompleted()
