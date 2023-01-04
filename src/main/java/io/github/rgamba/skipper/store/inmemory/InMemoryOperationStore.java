@@ -132,4 +132,10 @@ public class InMemoryOperationStore implements OperationStore {
       respsLock.unlock();
     }
   }
+
+  @Override
+  public void createOperationRequestAndResponse(
+      @NonNull OperationRequest operationRequest, @NonNull OperationResponse operationResponse) {
+    throw new UnsupportedOperationException();
+  }
 }

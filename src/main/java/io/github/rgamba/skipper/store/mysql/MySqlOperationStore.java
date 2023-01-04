@@ -283,4 +283,15 @@ public class MySqlOperationStore implements OperationStore {
           }
         });
   }
+
+  @Override
+  public void createOperationRequestAndResponse(
+      @NonNull OperationRequest operationRequest, @NonNull OperationResponse operationResponse) {
+    transactionManager.execute(
+        conn -> {
+          createOperationRequest(operationRequest);
+          createOperationResponse(operationResponse);
+          return true;
+        });
+  }
 }

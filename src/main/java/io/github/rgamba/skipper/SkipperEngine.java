@@ -183,11 +183,9 @@ public class SkipperEngine {
       decisionResponse
           .getInlineExecutions()
           .forEach(
-              exe -> {
-                // TODO: optimize this by bulking all inserts into a single atomic transaction
-                operationStore.createOperationRequest(exe.getRequest());
-                operationStore.createOperationResponse(exe.getResponse());
-              });
+              exe ->
+                  operationStore.createOperationRequestAndResponse(
+                      exe.getRequest(), exe.getResponse()));
     }
 
     if (decisionResponse.getNewStatus().isCompleted()

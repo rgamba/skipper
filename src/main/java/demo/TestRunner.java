@@ -80,12 +80,11 @@ public class TestRunner {
     System.out.println("Starting tests...");
     runTests(engine);
 
-    Instant timeout = Instant.now().plus(Duration.ofSeconds(30));
+    Instant timeout = Instant.now().plus(Duration.ofSeconds(60));
     while (workflowsCompleted.incrementAndGet() < workflowsCreated.get()
         && Instant.now().isBefore(timeout)) {
       Thread.sleep(500);
     }
-
     long durationSum = 0;
     Duration minDuration = Duration.ofHours(1000);
     Duration maxDuration = Duration.ZERO;
