@@ -57,7 +57,7 @@ public class DecisionExecutor {
     val workflowMethod = inspector.getWorkflowMethod();
     val params =
         inspector.getWorkflowMethodParams(decisionRequest.getWorkflowInstance().getInitialArgs());
-    Object result = null;
+    Object result;
     try (val decisionTimer = Metrics.getDecisionLatencyTimer(clazz).time()) {
       result = workflowMethod.invoke(decider, params);
     } catch (IllegalAccessException e) {
@@ -95,6 +95,7 @@ public class DecisionExecutor {
     val inspector = new WorkflowInspector(clazz, decider);
     val signalMethod = inspector.getSignalConsumerMethod(signalMethodName);
     val params = inspector.getMethodParams(signalMethod, args);
+    inspector.setState(instance.getState());
     try {
       signalMethod.invoke(decider, params);
     } catch (IllegalAccessException e) {

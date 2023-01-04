@@ -7,6 +7,7 @@ import io.github.rgamba.skipper.api.annotations.WorkflowMethod;
 import io.github.rgamba.skipper.common.Anything;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 public class WorkflowInspector {
   private final Class<? extends SkipperWorkflow> clazz;
@@ -37,7 +39,13 @@ public class WorkflowInspector {
         if (field.get(instance) == null) {
           result.put(field.getName(), null);
         } else {
-          result.put(field.getName(), new Anything(field.getType(), field.get(instance)));
+          if (field.getType().getTypeParameters().length > 0) {
+            val args = ((ParameterizedTypeImpl) field.getGenericType()).getActualTypeArguments();
+            Class<?>[] params = Arrays.stream(args).map(t -> (Class) t).toArray(Class<?>[]::new);
+            result.put(field.getName(), new Anything(field.getType(), field.get(instance), params));
+          } else {
+            result.put(field.getName(), new Anything(field.getType(), field.get(instance)));
+          }
         }
       } catch (IllegalAccessException e) {
         throw new IllegalStateException(

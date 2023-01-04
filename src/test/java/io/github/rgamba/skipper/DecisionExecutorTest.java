@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import io.github.rgamba.skipper.api.DecisionRequest;
 import io.github.rgamba.skipper.api.SkipperWorkflow;
+import io.github.rgamba.skipper.api.annotations.StateField;
 import io.github.rgamba.skipper.api.annotations.WorkflowMethod;
 import io.github.rgamba.skipper.common.Anything;
 import io.github.rgamba.skipper.models.*;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Value;
 import lombok.val;
 import lombok.var;
@@ -161,6 +163,28 @@ public class DecisionExecutorTest {
   }
 
   @Test
+  public void testWorkflowWithComplexStateField() {
+    when(registry.getWorkflow(eq(StateParamComplexType.class)))
+        .thenReturn(new StateParamComplexType());
+    ArrayList<User> users = new ArrayList<>();
+    users.add(new User("ricardo"));
+    Map<String, Anything> state = new HashMap<>();
+    state.put("users", Anything.of(users));
+    var req =
+        DECISION_REQUEST
+            .toBuilder()
+            .workflowInstance(
+                TEST_WORKFLOW_INSTANCE
+                    .toBuilder()
+                    .workflowType(new WorkflowType(StateParamComplexType.class))
+                    .initialArgs(new ArrayList<>())
+                    .state(state)
+                    .build())
+            .build();
+    executor.execute(req, registry);
+  }
+
+  @Test
   public void testExecuteWhenDeciderReturnsNullValue() {
     when(registry.getWorkflow(eq(ReturnsNull.class))).thenReturn(new ReturnsNull());
     // less args than expected
@@ -243,6 +267,13 @@ public class DecisionExecutorTest {
     public String test() {
       return null;
     }
+  }
+
+  private static class StateParamComplexType implements SkipperWorkflow {
+    @StateField List<User> users;
+
+    @WorkflowMethod
+    public void test() {}
   }
 
   private static class ThrowsStopExecution implements SkipperWorkflow {
