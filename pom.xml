@@ -66,23 +66,6 @@
         <artifactId>spotless-maven-plugin</artifactId>
         <version>2.6.1</version>
         <configuration>
-          <formats>
-            <!-- you can define as many formats as you want, each is independent -->
-            <format>
-              <!-- define the files to apply to -->
-              <includes>
-                <include>*.md</include>
-                <include>.gitignore</include>
-              </includes>
-              <!-- define the steps to apply to those files -->
-              <trimTrailingWhitespace/>
-              <endWithNewline/>
-              <indent>
-                <tabs>true</tabs>
-                <spacesPerTab>4</spacesPerTab>
-              </indent>
-            </format>
-          </formats>
           <java>
             <googleJavaFormat>
               <version>1.7</version>
